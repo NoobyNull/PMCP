@@ -117,8 +117,16 @@ async def lifespan(app: FastAPI):
         await sequential_thinking_service.initialize()
         logger.info("Sequential Thinking service initialized")
 
-        # Initialize plugin manager
-        plugin_manager = PluginManager(db_manager)
+        # Initialize plugin manager with services
+        services = {
+            'memory_service': memory_service,
+            'code_improvement_service': code_improvement_service,
+            'rag_service': rag_service,
+            'context7_service': context7_service,
+            'playwright_service': playwright_service,
+            'sequential_thinking_service': sequential_thinking_service
+        }
+        plugin_manager = PluginManager(db_manager, services)
         await plugin_manager.initialize()
         logger.info("Plugin manager initialized")
 
@@ -137,6 +145,8 @@ async def lifespan(app: FastAPI):
         if config.ssh.enabled:
             ssh_service = SSHService(config.ssh, memory_service, code_improvement_service, rag_service)
             await ssh_service.start()
+            # Add SSH service to plugin manager
+            plugin_manager.services['ssh_service'] = ssh_service
             logger.info(f"SSH service started on port {config.ssh.port}")
 
         logger.info("All services initialized successfully")

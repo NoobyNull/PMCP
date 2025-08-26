@@ -18,9 +18,10 @@ logger = logging.getLogger(__name__)
 class PluginManager:
     """Manages MCP plugins - installation, loading, and integration"""
     
-    def __init__(self, db_manager=None):
+    def __init__(self, db_manager=None, services=None):
         self.db_manager = db_manager
-        self.plugins_dir = Path("/opt/PerfectMPC/plugins")
+        self.services = services or {}
+        self.plugins_dir = Path("/opt/PerfectMCP/plugins")
         self.installed_plugins: Dict[str, Dict] = {}
         self.plugin_tools: Dict[str, Dict] = {}
         self.plugin_handlers: Dict[str, callable] = {}
@@ -665,66 +666,131 @@ async def handle_automation(params: Dict) -> Dict:
         try:
             if tool_name == "memory_context_PerfectMCP_Server":
                 # Route to memory service
-                return {
-                    "status": "success",
-                    "message": f"Memory context managed for session {arguments.get('session_id', 'default')}",
-                    "tool": "memory_context",
-                    "arguments": arguments
-                }
+                memory_service = self.services.get('memory_service')
+                if memory_service:
+                    session_id = arguments.get('session_id', 'default')
+                    context = arguments.get('context', '')
+                    if context:
+                        await memory_service.update_context(session_id, context)
+                    return {
+                        "status": "success",
+                        "message": f"Memory context managed for session {session_id}",
+                        "tool": "memory_context",
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "Memory service not available"}
 
             elif tool_name == "code_analysis_PerfectMCP_Server":
                 # Route to code improvement service
-                return {
-                    "status": "success",
-                    "message": f"Code analysis completed for {arguments.get('language', 'unknown')} code",
-                    "tool": "code_analysis",
-                    "arguments": arguments
-                }
+                code_service = self.services.get('code_improvement_service')
+                if code_service:
+                    code = arguments.get('code', '')
+                    language = arguments.get('language', 'unknown')
+                    # Perform actual code analysis
+                    result = await code_service.analyze_code(code, language)
+                    return {
+                        "status": "success",
+                        "message": f"Code analysis completed for {language} code",
+                        "tool": "code_analysis",
+                        "result": result,
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "Code improvement service not available"}
 
             elif tool_name == "document_search_PerfectMCP_Server":
                 # Route to RAG service
-                return {
-                    "status": "success",
-                    "message": f"Document search completed for query: {arguments.get('query', 'N/A')}",
-                    "tool": "document_search",
-                    "arguments": arguments
-                }
+                rag_service = self.services.get('rag_service')
+                if rag_service:
+                    query = arguments.get('query', '')
+                    max_results = arguments.get('max_results', 5)
+                    # Perform actual document search
+                    results = await rag_service.search_documents(query, max_results)
+                    return {
+                        "status": "success",
+                        "message": f"Document search completed for query: {query}",
+                        "tool": "document_search",
+                        "results": results,
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "RAG service not available"}
 
             elif tool_name == "context7_analyze_PerfectMCP_Server":
                 # Route to Context7 service
-                return {
-                    "status": "success",
-                    "message": f"Context7 analysis completed for session {arguments.get('session_id', 'default')}",
-                    "tool": "context7_analyze",
-                    "arguments": arguments
-                }
+                context7_service = self.services.get('context7_service')
+                if context7_service:
+                    session_id = arguments.get('session_id', 'default')
+                    content = arguments.get('content', '')
+                    context_type = arguments.get('context_type', 'general')
+                    # Perform actual context analysis
+                    result = await context7_service.analyze_context(session_id, content, context_type)
+                    return {
+                        "status": "success",
+                        "message": f"Context7 analysis completed for session {session_id}",
+                        "tool": "context7_analyze",
+                        "result": result,
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "Context7 service not available"}
 
             elif tool_name == "playwright_navigate_PerfectMCP_Server":
                 # Route to Playwright service
-                return {
-                    "status": "success",
-                    "message": f"Playwright navigation to {arguments.get('url', 'N/A')} completed",
-                    "tool": "playwright_navigate",
-                    "arguments": arguments
-                }
+                playwright_service = self.services.get('playwright_service')
+                if playwright_service:
+                    url = arguments.get('url', '')
+                    action = arguments.get('action', 'navigate')
+                    selector = arguments.get('selector', '')
+                    # Perform actual web automation
+                    result = await playwright_service.execute_action(url, action, selector)
+                    return {
+                        "status": "success",
+                        "message": f"Playwright navigation to {url} completed",
+                        "tool": "playwright_navigate",
+                        "result": result,
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "Playwright service not available"}
 
             elif tool_name == "sequential_thinking_PerfectMCP_Server":
                 # Route to Sequential Thinking service
-                return {
-                    "status": "success",
-                    "message": f"Sequential thinking chain created for session {arguments.get('session_id', 'default')}",
-                    "tool": "sequential_thinking",
-                    "arguments": arguments
-                }
+                sequential_service = self.services.get('sequential_thinking_service')
+                if sequential_service:
+                    session_id = arguments.get('session_id', 'default')
+                    problem = arguments.get('problem', '')
+                    thinking_type = arguments.get('thinking_type', 'general')
+                    # Perform actual sequential thinking
+                    result = await sequential_service.create_thinking_chain(session_id, problem, thinking_type)
+                    return {
+                        "status": "success",
+                        "message": f"Sequential thinking chain created for session {session_id}",
+                        "tool": "sequential_thinking",
+                        "result": result,
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "Sequential Thinking service not available"}
 
             elif tool_name == "ssh_execute_PerfectMCP_Server":
                 # Route to SSH service
-                return {
-                    "status": "success",
-                    "message": f"SSH command executed: {arguments.get('command', 'N/A')}",
-                    "tool": "ssh_execute",
-                    "arguments": arguments
-                }
+                ssh_service = self.services.get('ssh_service')
+                if ssh_service:
+                    command = arguments.get('command', '')
+                    session_id = arguments.get('session_id', 'default')
+                    # Execute SSH command
+                    result = await ssh_service.execute_command(command, session_id)
+                    return {
+                        "status": "success",
+                        "message": f"SSH command executed: {command}",
+                        "tool": "ssh_execute",
+                        "result": result,
+                        "arguments": arguments
+                    }
+                else:
+                    return {"status": "error", "message": "SSH service not available"}
 
             else:
                 return {
