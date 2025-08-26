@@ -1,0 +1,615 @@
+{% extends "base.html" %}
+
+{% block title %}Live Logs - PerfectMPC Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-broadcast-pin"></i> Live Logs
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-success" id="connect-btn" onclick="toggleConnection()">
+                <i class="bi bi-play-circle"></i> <span id="connect-text">Connect</span>
+            </button>
+            <button type="button" class="btn btn-outline-warning" onclick="clearDisplay()" id="clear-btn">
+                <i class="bi bi-trash"></i> Clear Display
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="pauseStream()" id="pause-btn" style="display: none;">
+                <i class="bi bi-pause-circle"></i> <span id="pause-text">Pause</span>
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="exportLogs()">
+                <i class="bi bi-download"></i> Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Status and Stats -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Connection Status
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold" id="connection-status">
+                            🔴 Disconnected
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-wifi fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Logs
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="total-logs">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-journal-text fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            New Logs/Min
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="logs-per-minute">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-graph-up fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Uptime
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="uptime">
+                            00:00:00
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-md-2">
+        <label for="log-level" class="form-label">Level</label>
+        <select class="form-select" id="log-level" onchange="applyFilters()">
+            <option value="all">All Levels</option>
+            <option value="ERROR">Error</option>
+            <option value="WARNING">Warning</option>
+            <option value="INFO">Info</option>
+            <option value="DEBUG">Debug</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label for="log-component" class="form-label">Component</label>
+        <select class="form-select" id="log-component" onchange="applyFilters()">
+            <option value="all">All Components</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="log-search" class="form-label">Search</label>
+        <input type="text" class="form-control" id="log-search" placeholder="Filter messages..." onkeyup="applyFilters()">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Options</label>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="human-readable" checked onchange="applyFilters()">
+            <label class="form-check-label" for="human-readable">
+                Human-readable
+            </label>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Display</label>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="auto-scroll" checked>
+            <label class="form-check-label" for="auto-scroll">
+                Auto-scroll
+            </label>
+        </div>
+    </div>
+    <div class="col-md-1">
+        <label for="max-logs" class="form-label">Max</label>
+        <select class="form-select" id="max-logs">
+            <option value="100">100</option>
+            <option value="500" selected>500</option>
+            <option value="1000">1000</option>
+            <option value="2000">2000</option>
+        </select>
+    </div>
+</div>
+
+<!-- Live Logs Display -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-terminal"></i> Live Log Stream
+        </h6>
+        <div class="dropdown no-arrow">
+            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots-vertical fa-sm fa-fw text-gray-400"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right shadow">
+                <a class="dropdown-item" href="#" onclick="copyLogs()">
+                    <i class="bi bi-clipboard fa-sm fa-fw mr-2 text-gray-400"></i>
+                    Copy All
+                </a>
+                <a class="dropdown-item" href="#" onclick="exportLogs()">
+                    <i class="bi bi-download fa-sm fa-fw mr-2 text-gray-400"></i>
+                    Export
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="#" onclick="clearDisplay()">
+                    <i class="bi bi-trash fa-sm fa-fw mr-2 text-gray-400"></i>
+                    Clear Display
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="log-container" style="height: 600px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 0.85em; padding: 15px;">
+            <div class="text-center text-muted" style="margin-top: 250px;">
+                <i class="bi bi-broadcast-pin fa-3x mb-3"></i>
+                <h5>Live Logs Stream</h5>
+                <p>Click "Connect" to start streaming real-time logs</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let ws = null;
+    let isConnected = false;
+    let isPaused = false;
+    let logs = [];
+    let filteredLogs = [];
+    let startTime = null;
+    let logCount = 0;
+    let logsPerMinute = 0;
+    let lastMinuteCount = 0;
+    let components = new Set();
+
+    // Connection management
+    function toggleConnection() {
+        if (isConnected) {
+            disconnect();
+        } else {
+            connect();
+        }
+    }
+
+    function connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/logs`;
+
+        updateConnectionStatus('🟡 Connecting...', 'text-warning');
+        document.getElementById('connect-text').textContent = 'Connecting...';
+        document.getElementById('connect-btn').disabled = true;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = function() {
+            isConnected = true;
+            startTime = new Date();
+            updateConnectionStatus('🟢 Connected', 'text-success');
+            document.getElementById('connect-text').textContent = 'Disconnect';
+            document.getElementById('connect-btn').className = 'btn btn-outline-danger';
+            document.getElementById('connect-btn').disabled = false;
+            document.getElementById('pause-btn').style.display = 'inline-block';
+
+            // Start uptime counter
+            updateUptime();
+            setInterval(updateUptime, 1000);
+
+            // Start logs per minute counter
+            setInterval(updateLogsPerMinute, 60000);
+
+            console.log('WebSocket connected for live logs');
+        };
+
+        ws.onmessage = function(event) {
+            if (isPaused) return;
+
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'initial_logs') {
+                logs = data.logs || [];
+                logCount = logs.length;
+                updateComponents();
+                applyFilters();
+                updateStats();
+            } else if (data.type === 'new_logs') {
+                const newLogs = data.logs || [];
+                logs = [...newLogs, ...logs];
+                logCount += newLogs.length;
+                lastMinuteCount += newLogs.length;
+
+                // Limit logs to prevent memory issues
+                const maxLogs = parseInt(document.getElementById('max-logs').value) || 500;
+                if (logs.length > maxLogs * 2) {
+                    logs = logs.slice(0, maxLogs);
+                }
+
+                updateComponents();
+                applyFilters();
+                updateStats();
+            }
+        };
+
+        ws.onclose = function() {
+            isConnected = false;
+            updateConnectionStatus('🔴 Disconnected', 'text-danger');
+            document.getElementById('connect-text').textContent = 'Connect';
+            document.getElementById('connect-btn').className = 'btn btn-outline-success';
+            document.getElementById('connect-btn').disabled = false;
+            document.getElementById('pause-btn').style.display = 'none';
+
+            console.log('WebSocket disconnected');
+
+            // Auto-reconnect after 3 seconds if not manually disconnected
+            if (document.getElementById('connect-text').textContent === 'Disconnect') {
+                setTimeout(connect, 3000);
+            }
+        };
+
+        ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            updateConnectionStatus('❌ Error', 'text-danger');
+            document.getElementById('connect-btn').disabled = false;
+        };
+    }
+
+    function disconnect() {
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+        isConnected = false;
+        updateConnectionStatus('🔴 Disconnected', 'text-muted');
+        document.getElementById('connect-text').textContent = 'Connect';
+        document.getElementById('connect-btn').className = 'btn btn-outline-success';
+        document.getElementById('pause-btn').style.display = 'none';
+    }
+
+    function pauseStream() {
+        isPaused = !isPaused;
+        if (isPaused) {
+            document.getElementById('pause-text').textContent = 'Resume';
+            document.getElementById('pause-btn').className = 'btn btn-outline-success';
+            updateConnectionStatus('⏸️ Paused', 'text-warning');
+        } else {
+            document.getElementById('pause-text').textContent = 'Pause';
+            document.getElementById('pause-btn').className = 'btn btn-outline-secondary';
+            updateConnectionStatus('🟢 Connected', 'text-success');
+        }
+    }
+
+    // Display functions
+    function applyFilters() {
+        const level = document.getElementById('log-level').value;
+        const component = document.getElementById('log-component').value;
+        const search = document.getElementById('log-search').value.toLowerCase();
+        const humanReadable = document.getElementById('human-readable').checked;
+
+        filteredLogs = logs.filter(log => {
+            if (level !== 'all' && log.level !== level) return false;
+            if (component !== 'all' && log.component !== component) return false;
+            if (search && !log.message.toLowerCase().includes(search)) return false;
+            return true;
+        });
+
+        displayLogs(humanReadable);
+    }
+
+    function displayLogs(humanReadable = true) {
+        const container = document.getElementById('log-container');
+        const maxDisplay = parseInt(document.getElementById('max-logs').value) || 500;
+
+        if (filteredLogs.length === 0) {
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted" style="margin-top: 250px;">
+                        <i class="bi bi-broadcast-pin fa-3x mb-3"></i>
+                        <h5>Live Logs Stream</h5>
+                        <p>Click "Connect" to start streaming real-time logs</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '<div class="text-center text-muted" style="margin-top: 250px;"><h5>No logs match current filters</h5></div>';
+            }
+            return;
+        }
+
+        let html = '';
+        const displayLogs = filteredLogs.slice(0, maxDisplay);
+
+        displayLogs.forEach(log => {
+            const level = log.level || 'INFO';
+            const message = humanReadable ? formatHumanReadableMessage(log) : (log.message || log);
+            const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '';
+            const component = log.component || 'system';
+
+            // Color coding
+            let levelColor = '#6c757d';
+            let levelIcon = 'bi-info-circle';
+
+            switch (level.toUpperCase()) {
+                case 'ERROR':
+                case 'CRITICAL':
+                    levelColor = '#dc3545';
+                    levelIcon = 'bi-exclamation-triangle-fill';
+                    break;
+                case 'WARNING':
+                    levelColor = '#ffc107';
+                    levelIcon = 'bi-exclamation-triangle';
+                    break;
+                case 'INFO':
+                    levelColor = '#17a2b8';
+                    levelIcon = 'bi-info-circle-fill';
+                    break;
+                case 'DEBUG':
+                    levelColor = '#6c757d';
+                    levelIcon = 'bi-bug';
+                    break;
+            }
+
+            html += `
+                <div style="margin-bottom: 8px; padding: 8px; border-left: 3px solid ${levelColor}; background: rgba(255,255,255,0.02);">
+                    <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                        <span style="color: #6c757d; font-size: 0.8em; margin-right: 10px;">${timestamp}</span>
+                        <span style="background: ${levelColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; margin-right: 8px;">
+                            <i class="bi ${levelIcon}"></i> ${level}
+                        </span>
+                        ${component !== 'system' ? `<span style="background: #495057; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em;">${component}</span>` : ''}
+                    </div>
+                    <div style="margin-left: 10px; line-height: 1.4;">
+                        ${escapeHtml(message)}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Auto-scroll if enabled
+        if (document.getElementById('auto-scroll').checked) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    // Utility functions
+    function updateConnectionStatus(text, className) {
+        const status = document.getElementById('connection-status');
+        status.textContent = text;
+        status.className = `h6 mb-0 font-weight-bold ${className}`;
+    }
+
+    function updateStats() {
+        document.getElementById('total-logs').textContent = logCount.toLocaleString();
+    }
+
+    function updateUptime() {
+        if (!startTime) return;
+        const now = new Date();
+        const diff = now - startTime;
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        document.getElementById('uptime').textContent =
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateLogsPerMinute() {
+        logsPerMinute = lastMinuteCount;
+        document.getElementById('logs-per-minute').textContent = logsPerMinute;
+        lastMinuteCount = 0;
+    }
+
+    function updateComponents() {
+        logs.forEach(log => {
+            if (log.component) {
+                components.add(log.component);
+            }
+        });
+
+        const select = document.getElementById('log-component');
+        const currentValue = select.value;
+        select.innerHTML = '<option value="all">All Components</option>';
+
+        Array.from(components).sort().forEach(component => {
+            const option = document.createElement('option');
+            option.value = component;
+            option.textContent = component;
+            select.appendChild(option);
+        });
+
+        select.value = currentValue;
+    }
+
+    function formatHumanReadableMessage(log) {
+        let message = log.message || '';
+
+        // Extract common patterns and make them more readable
+        if (message.includes('API Request:') || message.includes('API Response:')) {
+            const match = message.match(/(GET|POST|PUT|DELETE|PATCH)\s+([^\s]+)/);
+            if (match) {
+                const method = match[1];
+                const endpoint = match[2];
+                const status = message.match(/→\s+(\d+)/)?.[1] || '';
+                const timing = message.match(/\(([^)]+)\)/)?.[1] || '';
+
+                if (message.includes('Request:')) {
+                    return `🌐 ${method} request to ${endpoint}`;
+                } else if (message.includes('Response:')) {
+                    return `✅ ${method} ${endpoint} → ${status}${timing ? ` (${timing})` : ''}`;
+                }
+            }
+        }
+
+        // Format database logs
+        if (message.includes('connection established')) {
+            return `🔗 Database connection established`;
+        }
+        if (message.includes('connection closed')) {
+            return `🔌 Database connection closed`;
+        }
+
+        // Format service initialization
+        if (message.includes('initialized successfully')) {
+            const service = message.split(' ')[0];
+            return `🚀 ${service} service started successfully`;
+        }
+
+        // Format WebSocket logs
+        if (message.includes('WebSocket')) {
+            if (message.includes('connected')) {
+                return `🔗 WebSocket client connected`;
+            }
+            if (message.includes('disconnected')) {
+                return `🔌 WebSocket client disconnected`;
+            }
+        }
+
+        // Format error messages
+        if (log.level === 'ERROR' && message.includes('Error')) {
+            return `❌ ${message.replace(/^.*Error:\s*/, '')}`;
+        }
+
+        // Format warning messages
+        if (log.level === 'WARNING') {
+            return `⚠️ ${message}`;
+        }
+
+        // Default: clean up the message
+        return message
+            .replace(/^\d{2}:\d{2}:\d{2}\s+\w+\s+\w+\s+/, '') // Remove timestamp prefix
+            .replace(/\[.*?\]/g, '') // Remove bracketed content
+            .trim();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function clearDisplay() {
+        logs = [];
+        filteredLogs = [];
+        logCount = 0;
+        components.clear();
+        updateStats();
+        updateComponents();
+        displayLogs();
+    }
+
+    function copyLogs() {
+        const text = filteredLogs.map(log => {
+            const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+            return `${timestamp} [${log.level}] ${log.component || 'system'}: ${log.message}`;
+        }).join('\n');
+
+        navigator.clipboard.writeText(text).then(() => {
+            showAlert('success', 'Logs copied to clipboard');
+        }).catch(() => {
+            showAlert('warning', 'Failed to copy logs to clipboard');
+        });
+    }
+
+    function exportLogs() {
+        const text = filteredLogs.map(log => {
+            const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+            return `${timestamp} [${log.level}] ${log.component || 'system'}: ${log.message}`;
+        }).join('\n');
+
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `live-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function showAlert(type, message) {
+        const alertContainer = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert" id="${alertId}">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        alertContainer.innerHTML = alertHtml;
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        updateConnectionStatus('🔴 Disconnected', 'text-muted');
+        updateStats();
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (ws) {
+            ws.close();
+        }
+    });
+</script>
+{% endblock %}

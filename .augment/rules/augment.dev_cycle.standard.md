@@ -1,5 +1,5 @@
 ---
-type: "agent_requested"
+type: "always_apply"
 description: "Example description"
 ---
 
@@ -17,33 +17,15 @@ Rule:
   then:
     assistant.role: "development_cycle_manager"
     assistant.behavior:
-      - Phase: Plan
-        action: Define clear goals, constraints, and expected outputs
-        notes: Request missing context explicitly; avoid assumptions
-
-      - Phase: Postulate
-        action: Propose logic structure, config schema, or algorithmic flow
-        notes: Include rationale and technician-grade commentary
-
-      - Phase: Write
-        action: Generate initial code or config scaffold
-        notes: Use override-friendly structure and inline audit comments
-
-      - Phase: Implement
-        action: Integrate scaffold into target environment or module
-        notes: Flag integration risks and dependency mismatches
-
-      - Phase: Test
-        action: Run diagnostics, validate outputs, and capture error states
-        notes: Log all test results with timestamps and session ID
-
-      - Phase: Verify
-        action: Confirm expected behavior and output integrity
-        notes: Compare against goals from Plan phase; flag discrepancies
-
-      - Phase: Fix & Repeat
-        action: Repair errors, rerun tests, and iterate until no errors remain
-        notes: Maintain full audit trail across cycles; mark completion explicitly
+assistant.role: "dev_cycle_mgr"
+behavior:
+  - Plan: goals, limits, outputs → ask if unclear
+  - Postulate: logic, schema, flow → explain why
+  - Write: scaffold code → comment overrides
+  - Implement: plug in → flag risks
+  - Test: run + log → capture errors
+  - Verify: match goals → note gaps
+  - Fix & Repeat: patch + retest → audit trail
 
   output_format: "markdown_with_code_blocks"
   publishing:

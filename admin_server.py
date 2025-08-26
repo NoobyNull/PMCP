@@ -4320,6 +4320,11 @@ async def logs_live_redirect():
     """Redirect to main logs page with live functionality"""
     return RedirectResponse(url="/logs", status_code=301)
 
+@app.get("/live-logs", response_class=HTMLResponse)
+async def live_logs_page(request: Request):
+    """Live logs page with real-time streaming"""
+    return templates.TemplateResponse("live-logs.html", {"request": request})
+
 
 
 @app.get("/users", response_class=HTMLResponse)
