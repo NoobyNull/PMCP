@@ -944,10 +944,6 @@
                 <i class="bi bi-cpu"></i> PerfectMCP Admin
             </a>
             <div class="navbar-nav ms-auto">
-                <span class="navbar-text me-3">
-                    <span id="server-status-indicator" class="status-indicator status-unknown"></span>
-                    <span id="server-status-text">Checking...</span>
-                </span>
                 <button class="theme-toggle me-3" onclick="toggleTheme()" title="Toggle Dark Mode">
                     <i class="bi bi-moon-fill" id="theme-icon"></i>
                 </button>
@@ -1207,18 +1203,8 @@
         }
         
         function updateServerStatus(status) {
-            const indicator = document.getElementById('server-status-indicator');
-            const text = document.getElementById('server-status-text');
-
-            if (indicator && text) {
-                if (status && status.running) {
-                    indicator.className = 'status-indicator status-running';
-                    text.textContent = `Running (${status.health || 'healthy'})`;
-                } else {
-                    indicator.className = 'status-indicator status-stopped';
-                    text.textContent = 'Stopped';
-                }
-            }
+            // Server status is now only shown in the dashboard cards
+            // No navbar status indicator needed
         }
 
         // Fallback HTTP status checking if WebSocket fails
@@ -1237,13 +1223,8 @@
                 console.error('HTTP status check failed:', error);
             }
 
-            // If HTTP check fails, show unknown status
-            const indicator = document.getElementById('server-status-indicator');
-            const text = document.getElementById('server-status-text');
-            if (indicator && text) {
-                indicator.className = 'status-indicator status-unknown';
-                text.textContent = 'Unknown';
-            }
+            // If HTTP check fails, status is only shown in dashboard cards
+            // No navbar status indicator to update
             return false;
         }
 
