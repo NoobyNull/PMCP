@@ -226,6 +226,7 @@
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/logs`;
 
+        console.log('Attempting WebSocket connection to:', wsUrl);
         updateConnectionStatus('🟡 Connecting...', 'text-warning');
         document.getElementById('connect-text').textContent = 'Connecting...';
         document.getElementById('connect-btn').disabled = true;
@@ -248,7 +249,8 @@
             // Start logs per minute counter
             setInterval(updateLogsPerMinute, 60000);
 
-            console.log('WebSocket connected for live logs');
+            console.log('✅ WebSocket connected successfully to:', wsUrl);
+            showAlert('success', 'Connected to live logs stream');
         };
 
         ws.onmessage = function(event) {
@@ -297,9 +299,11 @@
         };
 
         ws.onerror = function(error) {
-            console.error('WebSocket error:', error);
+            console.error('❌ WebSocket error:', error);
+            console.error('WebSocket URL was:', wsUrl);
             updateConnectionStatus('❌ Error', 'text-danger');
             document.getElementById('connect-btn').disabled = false;
+            showAlert('danger', 'WebSocket connection error: ' + error.message || 'Unknown error');
         };
     }
 
@@ -599,10 +603,38 @@
         }, 5000);
     }
 
+    // Test connection function for debugging
+    function testConnection() {
+        console.log('=== Connection Test ===');
+        console.log('Current URL:', window.location.href);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Host:', window.location.host);
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/logs`;
+        console.log('WebSocket URL:', wsUrl);
+
+        // Test if we can reach the admin server
+        fetch('/api/status')
+            .then(response => {
+                console.log('API Status response:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('API Status data:', data);
+            })
+            .catch(error => {
+                console.error('API Status error:', error);
+            });
+    }
+
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
         updateConnectionStatus('🔴 Disconnected', 'text-muted');
         updateStats();
+
+        // Run connection test for debugging
+        testConnection();
     });
 
     // Cleanup on page unload

@@ -4310,15 +4310,15 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
-@app.get("/logs", response_class=HTMLResponse)
-async def logs_page(request: Request):
-    """Logs viewer page"""
-    return templates.TemplateResponse("logs.html", {"request": request})
+@app.get("/logs")
+async def logs_redirect():
+    """Redirect old logs page to live logs"""
+    return RedirectResponse(url="/live-logs", status_code=301)
 
 @app.get("/logs/live")
 async def logs_live_redirect():
-    """Redirect to main logs page with live functionality"""
-    return RedirectResponse(url="/logs", status_code=301)
+    """Redirect to live logs page"""
+    return RedirectResponse(url="/live-logs", status_code=301)
 
 @app.get("/live-logs", response_class=HTMLResponse)
 async def live_logs_page(request: Request):
