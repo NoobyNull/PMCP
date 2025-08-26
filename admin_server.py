@@ -234,6 +234,7 @@ async def logging_middleware(request: Request, call_next):
 # Global variables
 mpc_config = None
 db_manager = None
+memory_service = None
 auth_manager = None
 mcp_server_process = None
 admin_start_time = time.time()
@@ -391,7 +392,7 @@ async def startup_event():
 
         # Initialize database manager
         with log_performance("database_initialization", "admin_server"):
-            global db_manager, auth_manager
+            global db_manager, auth_manager, memory_service
             db_manager = DatabaseManager(mpc_config.database)
             await db_manager.initialize()
 
@@ -399,6 +400,17 @@ async def startup_event():
         with log_performance("auth_initialization", "admin_server"):
             auth_manager = AuthManager(db_manager)
             await auth_manager.initialize()
+
+        # Initialize memory service
+        with log_performance("memory_service_initialization", "admin_server"):
+            try:
+                from services.memory_service import MemoryService
+                memory_service = MemoryService(db_manager, mpc_config.memory)
+                await memory_service.initialize()
+                logger.info("Memory service initialized for admin interface")
+            except Exception as e:
+                logger.warning(f"Failed to initialize memory service: {e}")
+                memory_service = None
 
         # Initialize tool metrics collection
         await initialize_tool_metrics()
@@ -2063,7 +2075,7 @@ async def get_mongodb_collections():
             return {"error": "MongoDB not available", "collections": []}
 
         # Get database
-        db = db_manager.mongo_client[db_manager.config.database]
+        db = db_manager.mongo_client[db_manager.config.mongodb.database]
 
         # Get collection names
         collection_names = await db.list_collection_names()
@@ -2231,7 +2243,7 @@ async def create_database_backup(backup_request: dict):
 
                 cmd = [
                     "mongodump",
-                    "--db", db_manager.config.database,
+                    "--db", db_manager.config.mongodb.database,
                     "--out", str(dump_dir)
                 ]
 
