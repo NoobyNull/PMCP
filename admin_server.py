@@ -18,7 +18,7 @@ import aiohttp
 import logging
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Form, UploadFile, File, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Form, UploadFile, File, HTTPException, Depends, BackgroundTasks, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -35,6 +35,7 @@ from utils.logger import (
     log_api_request, log_api_response, log_database_operation,
     setup_logging, get_logger
 )
+from utils.redis_log_handler import get_async_redis_handler, get_redis_log_handler
 
 # Import authentication
 from auth.auth_manager import AuthManager, UserRole
@@ -2384,8 +2385,44 @@ async def get_logs(
     search: str = "",
     category: str = "all"
 ):
-    """Get application logs with filtering"""
+    """Get application logs with filtering from Redis"""
     try:
+        # Try Redis first
+        try:
+            from utils.redis_log_handler import get_async_redis_handler
+            redis_handler = get_async_redis_handler()
+
+            if redis_handler:
+                # Use Redis for logs
+                redis_logs = await redis_handler.get_logs_async(
+                    count=lines,
+                    level=level if level != "all" else None,
+                    component=category if category != "all" else None,
+                    search=search if search else None
+                )
+
+                # Convert Redis logs to expected format
+                formatted_logs = []
+                for log_entry in redis_logs:
+                    formatted_logs.append({
+                        "timestamp": log_entry.get("timestamp", ""),
+                        "level": log_entry.get("level", "INFO"),
+                        "category": log_entry.get("component", "system"),
+                        "source": log_entry.get("logger", "unknown"),
+                        "message": log_entry.get("message", ""),
+                        "raw": f"{log_entry.get('timestamp', '')} {log_entry.get('level', 'INFO')} {log_entry.get('component', 'system')} {log_entry.get('message', '')}"
+                    })
+
+                return {
+                    "success": True,
+                    "logs": formatted_logs,
+                    "total": len(formatted_logs),
+                    "source": "redis"
+                }
+        except Exception as redis_error:
+            print(f"Redis logs failed, falling back to file: {redis_error}")
+
+        # Fallback to file-based logs
         log_files = [
             "/opt/PerfectMCP/logs/server.log"
         ]
@@ -2432,11 +2469,21 @@ async def get_logs(
         # Limit results
         all_logs = all_logs[:lines]
 
-        return {"logs": all_logs}
+        return {
+            "success": True,
+            "logs": all_logs,
+            "total": len(all_logs),
+            "source": "file"
+        }
 
     except Exception as e:
         logger.error(f"Error getting logs: {e}")
-        return {"logs": [], "error": str(e)}
+        return {
+            "success": False,
+            "logs": [],
+            "error": str(e),
+            "source": "error"
+        }
 
 def parse_log_line(line: str, source: str) -> dict:
     """Parse a log line into structured data"""
@@ -2509,6 +2556,116 @@ async def get_log_categories():
             {"value": "error", "label": "Errors"}
         ]
     }
+
+@app.get("/api/logs/stats")
+async def get_log_stats():
+    """Get log statistics from Redis"""
+    try:
+        from utils.redis_log_handler import get_async_redis_handler
+        redis_handler = get_async_redis_handler()
+
+        if redis_handler:
+            stats = await redis_handler.get_log_stats_async()
+            return {
+                "success": True,
+                "stats": stats
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Redis logging not available"
+            }
+    except Exception as e:
+        logger.error(f"Error getting log stats: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.delete("/api/logs")
+async def clear_logs():
+    """Clear all logs from Redis"""
+    try:
+        from utils.redis_log_handler import get_async_redis_handler
+        redis_handler = get_async_redis_handler()
+
+        if redis_handler:
+            success = await redis_handler.clear_logs_async()
+            if success:
+                return {
+                    "success": True,
+                    "message": "All logs cleared from Redis"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Failed to clear logs"
+                }
+        else:
+            return {
+                "success": False,
+                "error": "Redis logging not available"
+            }
+    except Exception as e:
+        logger.error(f"Error clearing logs: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    """WebSocket endpoint for real-time log streaming"""
+    await websocket.accept()
+
+    try:
+        redis_handler = get_async_redis_handler()
+        if not redis_handler:
+            await websocket.send_json({
+                "error": "Redis logging not available",
+                "fallback": "file"
+            })
+            await websocket.close()
+            return
+
+        # Send initial logs
+        initial_logs = await redis_handler.get_logs_async(count=50)
+        await websocket.send_json({
+            "type": "initial_logs",
+            "logs": initial_logs
+        })
+
+        # Stream new logs (simplified polling approach)
+        last_count = len(initial_logs)
+
+        while True:
+            try:
+                # Check for new logs every 2 seconds
+                await asyncio.sleep(2)
+
+                current_logs = await redis_handler.get_logs_async(count=100)
+                current_count = len(current_logs)
+
+                if current_count > last_count:
+                    # Send only new logs
+                    new_logs = current_logs[:current_count - last_count]
+                    await websocket.send_json({
+                        "type": "new_logs",
+                        "logs": new_logs
+                    })
+                    last_count = current_count
+
+            except Exception as e:
+                logger.error(f"WebSocket log streaming error: {e}")
+                break
+
+    except Exception as e:
+        logger.error(f"WebSocket connection error: {e}")
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
 
 @app.post("/api/auth/users/bulk")
 async def bulk_user_operations(operation_data: dict):
@@ -4085,6 +4242,11 @@ async def websocket_endpoint(websocket: WebSocket):
 async def logs_page(request: Request):
     """Logs viewer page"""
     return templates.TemplateResponse("logs.html", {"request": request})
+
+@app.get("/logs/live", response_class=HTMLResponse)
+async def logs_live_page():
+    """Redis live logs page"""
+    return FileResponse("static/logs-realtime.html")
 
 @app.get("/users", response_class=HTMLResponse)
 async def users_page(request: Request):

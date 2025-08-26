@@ -474,13 +474,31 @@ def setup_logging(config: LoggingConfig, enable_syslog: bool = False, syslog_add
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-    
+
+    # Setup Redis logging
+    try:
+        from .redis_log_handler import setup_redis_logging
+        redis_success = setup_redis_logging(
+            redis_host='localhost',
+            redis_port=6379,
+            redis_db=15,
+            max_logs=10000,
+            log_level=getattr(logging, log_level)
+        )
+        if redis_success:
+            print("✅ Redis logging enabled - DB 15")
+        else:
+            print("⚠️  Redis logging disabled - falling back to file only")
+    except Exception as e:
+        print(f"⚠️  Redis logging setup failed: {e}")
+
     # Log startup message
     logger = logging.getLogger(__name__)
     logger.info("Logging configured successfully", extra={
         "log_level": config.level,
         "log_format": config.format,
-        "log_file": config.file
+        "log_file": config.file,
+        "redis_logging": "enabled"
     })
 
 

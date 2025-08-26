@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis Live Logs - PMCP Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .logs-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .logs-header {
+            background: #2d2d2d;
+            padding: 1rem;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .logs-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .logs-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-group label {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        .control-group select,
+        .control-group input {
+            background: #333;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .btn.btn-danger {
+            background: #f44336;
+        }
+        
+        .btn.btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .btn.paused {
+            background: #ff9800;
+        }
+        
+        .logs-stats {
+            background: #2d2d2d;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .stats-section {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .stat-label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .stat-value {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .level-distribution {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .level-stat {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+        
+        .level-stat.log-error .level-name { color: #f44336; }
+        .level-stat.log-warning .level-name { color: #ff9800; }
+        .level-stat.log-info .level-name { color: #2196F3; }
+        .level-stat.log-debug .level-name { color: #9E9E9E; }
+        
+        .logs-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .log-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: #1a1a1a;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .log-entry {
+            display: flex;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #333;
+            transition: background 0.3s;
+        }
+        
+        .log-entry:hover {
+            background: #2a2a2a;
+        }
+        
+        .log-entry.new-log {
+            background: #1b4332;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { background: #2d5a3d; }
+            to { background: #1b4332; }
+        }
+        
+        .log-timestamp {
+            color: #888;
+            width: 100px;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+        
+        .log-level {
+            width: 80px;
+            flex-shrink: 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .log-component {
+            width: 120px;
+            flex-shrink: 0;
+            color: #4CAF50;
+            font-size: 0.8rem;
+        }
+        
+        .log-message {
+            flex: 1;
+            word-break: break-word;
+        }
+        
+        .log-error .log-level { color: #f44336; }
+        .log-warning .log-level { color: #ff9800; }
+        .log-info .log-level { color: #2196F3; }
+        .log-debug .log-level { color: #9E9E9E; }
+        
+        .status-connected {
+            color: #4CAF50;
+        }
+        
+        .status-disconnected {
+            color: #f44336;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification-success {
+            background: #4CAF50;
+        }
+        
+        .notification-error {
+            background: #f44336;
+        }
+        
+        .notification-info {
+            background: #2196F3;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            accent-color: #4CAF50;
+        }
+        
+        @media (max-width: 768px) {
+            .logs-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .logs-controls {
+                justify-content: space-between;
+            }
+            
+            .logs-stats {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats-section {
+                justify-content: space-between;
+            }
+            
+            .log-entry {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .log-timestamp,
+            .log-level,
+            .log-component {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logs-container">
+        <!-- Header -->
+        <div class="logs-header">
+            <div class="logs-title">
+                🔴 Redis Live Logs
+                <span id="connectionStatus" class="status-disconnected">🔴 Connecting...</span>
+            </div>
+            
+            <div class="logs-controls">
+                <div class="control-group">
+                    <label for="logLevel">Level:</label>
+                    <select id="logLevel">
+                        <option value="all">All Levels</option>
+                        <option value="error">Error</option>
+                        <option value="warning">Warning</option>
+                        <option value="info">Info</option>
+                        <option value="debug">Debug</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="logComponent">Component:</label>
+                    <select id="logComponent">
+                        <option value="all">All Components</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="logSearch">Search:</label>
+                    <input type="text" id="logSearch" placeholder="Filter messages...">
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoScrollToggle" checked>
+                    <label for="autoScrollToggle">Auto-scroll</label>
+                </div>
+                
+                <button id="pauseLogs" class="btn">Pause</button>
+                <button id="clearLogs" class="btn btn-danger">Clear</button>
+                <button id="exportLogs" class="btn">Export</button>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="logs-stats">
+            <div class="stats-section">
+                <div id="logStats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Logs:</span>
+                        <span class="stat-value">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">Showing:</span>
+                    <span id="logCount" class="stat-value">0</span>
+                </div>
+            </div>
+            
+            <div id="levelDistribution" class="level-distribution">
+                <!-- Level distribution will be populated by JS -->
+            </div>
+        </div>
+        
+        <!-- Log Content -->
+        <div class="logs-content">
+            <div id="logOutput" class="log-output">
+                <div class="log-entry">
+                    <span class="log-timestamp">--:--:--</span>
+                    <span class="log-level">INFO</span>
+                    <span class="log-component">system</span>
+                    <span class="log-message">Connecting to Redis live logs...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/logs-realtime.js"></script>
+</body>
+</html>
