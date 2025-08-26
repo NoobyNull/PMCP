@@ -365,7 +365,7 @@ admin_dir.mkdir(exist_ok=True)
 (admin_dir / "templates").mkdir(exist_ok=True)
 
 # Mount static files and templates
-app.mount("/static", StaticFiles(directory=str(admin_dir / "static")), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory=str(admin_dir / "templates"))
 
 @app.on_event("startup")
@@ -2581,6 +2581,11 @@ async def get_log_stats():
             "success": False,
             "error": str(e)
         }
+
+@app.post("/api/logs/clear")
+async def clear_logs_post():
+    """Clear all logs from Redis (POST version for frontend)"""
+    return await clear_logs()
 
 @app.delete("/api/logs")
 async def clear_logs():
