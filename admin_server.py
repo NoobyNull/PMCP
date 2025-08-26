@@ -4320,6 +4320,8 @@ async def logs_live_redirect():
     """Redirect to main logs page with live functionality"""
     return RedirectResponse(url="/logs", status_code=301)
 
+
+
 @app.get("/users", response_class=HTMLResponse)
 async def users_page(request: Request):
     """User and API key management page"""
