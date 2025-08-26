@@ -4703,9 +4703,23 @@ async def revoke_api_key(key_id: str):
         logger.error(f"Error deleting API key {key_id}: {str(e)}")
         return {"success": False, "error": str(e)}
 
+# Plugin cache
+_plugin_cache = None
+_cache_timestamp = None
+CACHE_DURATION = 300  # 5 minutes
+
 # Real MCP Hub Integration
 async def fetch_real_mcp_hub_plugins():
-    """Fetch plugins from the real MCP Hub"""
+    """Fetch plugins from the real MCP Hub with caching"""
+    global _plugin_cache, _cache_timestamp
+
+    # Check cache
+    import time
+    current_time = time.time()
+    if _plugin_cache and _cache_timestamp and (current_time - _cache_timestamp) < CACHE_DURATION:
+        logger.info("Returning cached MCP plugins")
+        return _plugin_cache
+
     try:
         import aiohttp
 
@@ -4836,12 +4850,23 @@ async def fetch_real_mcp_hub_plugins():
                 unique_plugins.append(plugin)
 
         logger.info(f"Fetched {len(unique_plugins)} plugins from MCP Hub")
+
+        # Update cache
+        _plugin_cache = unique_plugins
+        _cache_timestamp = current_time
+
         return unique_plugins
 
     except Exception as e:
         logger.error(f"Error fetching from real MCP Hub: {e}")
         # Fallback to mock data
-        return get_fallback_plugins()
+        fallback_plugins = get_fallback_plugins()
+
+        # Cache fallback data too
+        _plugin_cache = fallback_plugins
+        _cache_timestamp = current_time
+
+        return fallback_plugins
 
 def categorize_plugin(name, description):
     """Categorize plugin based on name and description"""
@@ -4909,8 +4934,8 @@ def get_fallback_plugins():
 
 # MCP Hub API Endpoints
 @app.get("/api/mcp/hub/plugins")
-async def get_mcp_plugins():
-    """Get available MCP plugins from hub"""
+async def get_mcp_plugins(page: int = 1, per_page: int = 20, search: str = "", category: str = ""):
+    """Get available MCP plugins from hub with pagination"""
     try:
         # Get installed plugins from database
         installed_plugins = set()
@@ -4918,20 +4943,55 @@ async def get_mcp_plugins():
             installed_records = await db_manager.mongo_find_many("installed_plugins", {})
             installed_plugins = {record["plugin_id"] for record in installed_records}
 
-        # Fetch from real MCP Hub
-        plugins = await fetch_real_mcp_hub_plugins()
+        # Fetch from real MCP Hub (cached)
+        all_plugins = await fetch_real_mcp_hub_plugins()
 
         # Update plugin status based on installation
-        for plugin in plugins:
+        for plugin in all_plugins:
             if plugin["id"] in installed_plugins:
                 plugin["status"] = "installed"
             else:
                 plugin["status"] = "available"
 
-        return {"success": True, "plugins": plugins}
+        # Apply filters
+        filtered_plugins = all_plugins
+
+        if search:
+            search_lower = search.lower()
+            filtered_plugins = [
+                p for p in filtered_plugins
+                if search_lower in p["name"].lower() or
+                   search_lower in p["description"].lower() or
+                   search_lower in p.get("author", "").lower()
+            ]
+
+        if category and category != "all":
+            filtered_plugins = [p for p in filtered_plugins if p.get("category") == category]
+
+        # Calculate pagination
+        total_plugins = len(filtered_plugins)
+        total_pages = (total_plugins + per_page - 1) // per_page
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+
+        paginated_plugins = filtered_plugins[start_idx:end_idx]
+
+        return {
+            "success": True,
+            "plugins": paginated_plugins,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total_plugins,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
+            }
+        }
+
     except Exception as e:
         logger.error(f"Error fetching MCP plugins: {str(e)}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": str(e), "plugins": [], "pagination": {}}
 
 @app.post("/api/mcp/hub/install")
 async def install_mcp_plugin(request: dict):

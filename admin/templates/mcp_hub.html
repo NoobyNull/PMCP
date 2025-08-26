@@ -258,6 +258,27 @@
     <!-- Plugins will be dynamically loaded here -->
 </div>
 
+<!-- Pagination Controls -->
+<div id="pagination-container" class="d-flex justify-content-center mt-4" style="display: none;">
+    <nav aria-label="Plugin pagination">
+        <ul class="pagination">
+            <li class="page-item" id="prev-page">
+                <a class="page-link" href="#" onclick="loadPreviousPage()">
+                    <i class="bi bi-chevron-left"></i> Previous
+                </a>
+            </li>
+            <li class="page-item active" id="current-page">
+                <span class="page-link" id="page-info">Page 1 of 1</span>
+            </li>
+            <li class="page-item" id="next-page">
+                <a class="page-link" href="#" onclick="loadNextPage()">
+                    Next <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
 <!-- No Results State -->
 <div id="no-results" class="text-center py-5" style="display: none;">
     <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
@@ -329,25 +350,46 @@
 let allPlugins = [];
 let filteredPlugins = [];
 let currentCategory = 'all';
+let currentPage = 1;
+let totalPages = 1;
+let currentSearch = '';
+let isLoading = false;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     loadPlugins();
 });
 
-// Load plugins from MCP hub
-async function loadPlugins() {
+// Load plugins from MCP hub with pagination
+async function loadPlugins(page = 1, search = '', category = 'all') {
+    if (isLoading) return; // Prevent multiple simultaneous requests
+
     try {
+        isLoading = true;
         showLoading(true);
-        
-        // Fetch plugins from MCP hub API
-        const response = await fetch('/api/mcp/hub/plugins');
+
+        // Build query parameters
+        const params = new URLSearchParams({
+            page: page,
+            per_page: 20,
+            search: search,
+            category: category
+        });
+
+        // Fetch plugins from MCP hub API with pagination
+        const response = await fetch(`/api/mcp/hub/plugins?${params}`);
         const data = await response.json();
-        
+
         if (data.success) {
             allPlugins = data.plugins;
             filteredPlugins = [...allPlugins];
+            currentPage = data.pagination.page;
+            totalPages = data.pagination.total_pages;
+            currentSearch = search;
+            currentCategory = category;
+
             displayPlugins();
+            updatePagination(data.pagination);
             showLoading(false);
         } else {
             throw new Error(data.error || 'Failed to load plugins');
@@ -356,6 +398,8 @@ async function loadPlugins() {
         console.error('Error loading plugins:', error);
         showAlert('danger', `Error loading plugins: ${error.message}`);
         showLoading(false);
+    } finally {
+        isLoading = false;
     }
 }
 
@@ -418,37 +462,73 @@ function displayPlugins() {
 function showLoading(show) {
     document.getElementById('loading-state').style.display = show ? 'block' : 'none';
     document.getElementById('plugins-container').style.display = show ? 'none' : 'flex';
+    document.getElementById('pagination-container').style.display = show ? 'none' : 'flex';
+}
+
+// Update pagination controls
+function updatePagination(pagination) {
+    const paginationContainer = document.getElementById('pagination-container');
+    const pageInfo = document.getElementById('page-info');
+    const prevPage = document.getElementById('prev-page');
+    const nextPage = document.getElementById('next-page');
+
+    if (pagination.total_pages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+
+    paginationContainer.style.display = 'flex';
+    pageInfo.textContent = `Page ${pagination.page} of ${pagination.total_pages} (${pagination.total} plugins)`;
+
+    // Update previous button
+    if (pagination.has_prev) {
+        prevPage.classList.remove('disabled');
+    } else {
+        prevPage.classList.add('disabled');
+    }
+
+    // Update next button
+    if (pagination.has_next) {
+        nextPage.classList.remove('disabled');
+    } else {
+        nextPage.classList.add('disabled');
+    }
+}
+
+// Load previous page
+function loadPreviousPage() {
+    if (currentPage > 1) {
+        loadPlugins(currentPage - 1, currentSearch, currentCategory);
+    }
+}
+
+// Load next page
+function loadNextPage() {
+    if (currentPage < totalPages) {
+        loadPlugins(currentPage + 1, currentSearch, currentCategory);
+    }
 }
 
 // Filter plugins by search term
 function filterPlugins() {
     const searchTerm = document.getElementById('plugin-search').value.toLowerCase();
-    
-    filteredPlugins = allPlugins.filter(plugin => {
-        const matchesSearch = !searchTerm || 
-            plugin.name.toLowerCase().includes(searchTerm) ||
-            plugin.description.toLowerCase().includes(searchTerm) ||
-            plugin.author.toLowerCase().includes(searchTerm);
-        
-        const matchesCategory = currentCategory === 'all' || plugin.category === currentCategory;
-        
-        return matchesSearch && matchesCategory;
-    });
-    
-    displayPlugins();
+    // Reload with new search term
+    loadPlugins(1, searchTerm, currentCategory);
 }
 
 // Filter by category
 function filterByCategory(category) {
     currentCategory = category;
-    
+
     // Update active filter button
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     document.querySelector(`[data-category="${category}"]`).classList.add('active');
-    
-    filterPlugins();
+
+    // Reload with new category
+    const searchTerm = document.getElementById('plugin-search').value.toLowerCase();
+    loadPlugins(1, searchTerm, category);
 }
 
 // Clear search
@@ -681,7 +761,8 @@ async function uninstallPlugin(pluginId) {
 
 // Refresh plugins
 function refreshPlugins() {
-    loadPlugins();
+    // Reset to first page and reload
+    loadPlugins(1, currentSearch, currentCategory);
 }
 
 // Show alert
