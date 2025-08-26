@@ -2409,9 +2409,7 @@ async def get_logs(
     """Get application logs with filtering"""
     try:
         log_files = [
-            "/opt/PerfectMCP/logs/admin.log",
-            "/opt/PerfectMCP/logs/mcp.log",
-            "/opt/PerfectMCP/logs/error.log"
+            "/opt/PerfectMCP/logs/server.log"
         ]
 
         all_logs = []
@@ -4226,28 +4224,7 @@ async def test_logging():
         "levels_tested": ["DEBUG", "INFO", "WARNING", "ERROR"]
     }
 
-@app.get("/api/logs")
-async def get_logs(lines: int = 100, level: str = ""):
-    """Get server logs"""
-    try:
-        log_file = "/opt/PerfectMPC/logs/server.log"
-        if not Path(log_file).exists():
-            return {"logs": [], "message": "Log file not found"}
 
-        # Read last N lines
-        success, stdout, stderr = run_command(f"tail -n {lines} {log_file}")
-        if success:
-            log_lines = stdout.split('\n') if stdout else []
-
-            # Filter by level if specified
-            if level:
-                log_lines = [line for line in log_lines if level.upper() in line]
-
-            return {"logs": log_lines}
-        else:
-            return {"logs": [], "error": stderr}
-    except Exception as e:
-        return {"logs": [], "error": str(e)}
 
 @app.get("/config", response_class=HTMLResponse)
 async def config_page(request: Request):
