@@ -513,7 +513,7 @@ def get_system_stats() -> Dict[str, Any]:
             stats["memory_usage"] = 0
 
     # Disk usage
-    success, stdout, stderr = run_command("df /opt/PerfectMPC | tail -1 | awk '{print $5}' | cut -d'%' -f1")
+    success, stdout, stderr = run_command("df /opt/PerfectMCP | tail -1 | awk '{print $5}' | cut -d'%' -f1")
     if success:
         try:
             stats["disk_usage"] = float(stdout)
@@ -1035,41 +1035,7 @@ async def run_all_maintenance():
         logger.error(f"Error running all maintenance tasks: {e}")
         return {"success": False, "error": str(e)}
 
-@app.get("/api/status")
-@log_async_function_call(level='DEBUG', performance=False)  # Reduced logging for frequently called endpoint
-async def get_status():
-    """Get server status API with comprehensive logging"""
-    with log_context(operation="get_status"):
-        try:
-            logger.info("Checking system status")
 
-            # Get MPC server status
-            with log_performance("mpc_server_status", "admin_server"):
-                mcp_status = get_mcp_server_status()
-
-            # Get system stats
-            with log_performance("system_stats", "admin_server"):
-                system_stats = get_system_stats()
-
-            # Get admin stats
-            admin_uptime = time.time() - admin_start_time
-
-            logger.info("System status retrieved successfully",
-                       mcp_running=mcp_status.get('running', False),
-                       cpu_percent=system_stats.get('cpu_percent', 0),
-                       memory_percent=system_stats.get('memory_percent', 0),
-                       admin_uptime=f"{admin_uptime:.1f}s")
-
-            return {
-                "mcp_server": mcp_status,
-                "system": system_stats,
-                "admin_uptime": admin_uptime,
-                "timestamp": datetime.now().isoformat()
-            }
-
-        except Exception as e:
-            logger.error("Failed to get system status", exc_info=e)
-            return {"error": str(e)}
 
 @app.get("/api/mcp/config")
 async def get_mcp_config(api_key: Optional[str] = None):
@@ -5664,15 +5630,17 @@ async def get_server_status():
             except:
                 pass
 
-        # Get service status
+        # Get service status by checking if MCP server is running
+        # Services are available if the main MCP server is running
+        services_available = mcp_status.get("running", False)
         services_status = {
-            "memory": memory_service is not None,
-            "code_improvement": code_improvement_service is not None,
-            "rag": rag_service is not None,
-            "context7": context7_service is not None,
-            "playwright": playwright_service is not None,
-            "sequential_thinking": sequential_thinking_service is not None,
-            "ssh": ssh_service is not None
+            "memory": services_available,
+            "code_improvement": services_available,
+            "rag": services_available,
+            "context7": services_available,
+            "playwright": services_available,
+            "sequential_thinking": services_available,
+            "ssh": services_available
         }
 
         return {
