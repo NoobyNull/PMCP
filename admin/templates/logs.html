@@ -309,9 +309,17 @@
     // Update log statistics
     function updateLogStats() {
         const totalLines = logs.length;
-        const errorCount = logs.filter(line => line.includes('ERROR')).length;
-        const warningCount = logs.filter(line => line.includes('WARNING')).length;
-        
+        const errorCount = logs.filter(logEntry => {
+            const message = typeof logEntry === 'object' ? logEntry.message : logEntry;
+            const level = typeof logEntry === 'object' ? logEntry.level : '';
+            return level.toUpperCase() === 'ERROR' || message.includes('ERROR');
+        }).length;
+        const warningCount = logs.filter(logEntry => {
+            const message = typeof logEntry === 'object' ? logEntry.message : logEntry;
+            const level = typeof logEntry === 'object' ? logEntry.level : '';
+            return level.toUpperCase() === 'WARNING' || message.includes('WARNING');
+        }).length;
+
         document.getElementById('total-lines').textContent = totalLines;
         document.getElementById('error-count').textContent = errorCount;
         document.getElementById('warning-count').textContent = warningCount;
@@ -327,9 +335,10 @@
             return;
         }
         
-        const filteredLogs = logs.filter(line => 
-            line.toLowerCase().includes(searchTerm)
-        );
+        const filteredLogs = logs.filter(logEntry => {
+            const message = typeof logEntry === 'object' ? logEntry.message : logEntry;
+            return message.toLowerCase().includes(searchTerm);
+        });
         
         const container = document.getElementById('log-container');
         const wordWrap = document.getElementById('word-wrap').checked;
@@ -340,21 +349,41 @@
         }
         
         let html = '';
-        filteredLogs.forEach((line, index) => {
-            if (!line.trim()) return;
-            
+        filteredLogs.forEach((logEntry, index) => {
+            const message = typeof logEntry === 'object' ? logEntry.message : logEntry;
+            const level = typeof logEntry === 'object' ? logEntry.level : '';
+
+            if (!message.trim()) return;
+
             let logClass = 'text-light';
-            if (line.includes('ERROR')) logClass = 'text-danger';
-            else if (line.includes('WARNING')) logClass = 'text-warning';
-            else if (line.includes('INFO')) logClass = 'text-info';
-            else if (line.includes('DEBUG')) logClass = 'text-muted';
-            
+            switch (level.toUpperCase()) {
+                case 'ERROR':
+                case 'CRITICAL':
+                    logClass = 'text-danger';
+                    break;
+                case 'WARNING':
+                    logClass = 'text-warning';
+                    break;
+                case 'INFO':
+                    logClass = 'text-info';
+                    break;
+                case 'DEBUG':
+                    logClass = 'text-muted';
+                    break;
+                default:
+                    // Fallback to checking message content
+                    if (message.includes('ERROR')) logClass = 'text-danger';
+                    else if (message.includes('WARNING')) logClass = 'text-warning';
+                    else if (message.includes('INFO')) logClass = 'text-info';
+                    else if (message.includes('DEBUG')) logClass = 'text-muted';
+            }
+
             // Highlight search term
-            const highlightedLine = line.replace(
+            const highlightedLine = message.replace(
                 new RegExp(searchTerm, 'gi'),
                 `<mark>$&</mark>`
             );
-            
+
             html += `<div class="${logClass}" style="font-family: monospace; font-size: 0.85em; ${wordWrap ? '' : 'white-space: nowrap;'}">${highlightedLine}</div>`;
         });
         
