@@ -4315,10 +4315,10 @@ async def logs_page(request: Request):
     """Logs viewer page"""
     return templates.TemplateResponse("logs.html", {"request": request})
 
-@app.get("/logs/live", response_class=HTMLResponse)
-async def logs_live_page():
-    """Redis live logs page"""
-    return FileResponse("static/logs-realtime.html")
+@app.get("/logs/live")
+async def logs_live_redirect():
+    """Redirect to main logs page with live functionality"""
+    return RedirectResponse(url="/logs", status_code=301)
 
 @app.get("/users", response_class=HTMLResponse)
 async def users_page(request: Request):
