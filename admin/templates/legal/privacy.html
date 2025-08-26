@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - PerfectMCP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-shield-check"></i> Privacy Policy</h1>
+    <small class="text-muted">Last updated: December 2024</small>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="alert alert-info">
+            <strong>Privacy First:</strong> PerfectMCP is designed with privacy in mind. Your data stays on your infrastructure.
+        </div>
+
+        <section>
+            <h3>1. Information We Collect</h3>
+            <p>PerfectMCP operates as a self-hosted solution. The following data is processed locally on your infrastructure:</p>
+            
+            <h5>Data Processed Locally</h5>
+            <ul>
+                <li><strong>Code and Documents:</strong> Source code, documentation, and files you upload for analysis</li>
+                <li><strong>Session Data:</strong> Conversation history and context for AI interactions</li>
+                <li><strong>Configuration Data:</strong> Server settings, API keys, and user preferences</li>
+                <li><strong>Usage Logs:</strong> Server access logs and performance metrics</li>
+            </ul>
+        </section>
+
+        <section class="mt-4">
+            <h3>2. How We Use Your Information</h3>
+            <p>Your data is used exclusively for:</p>
+            <ul>
+                <li>Providing AI-powered development assistance</li>
+                <li>Maintaining session context and memory</li>
+                <li>Improving code analysis and suggestions</li>
+                <li>System monitoring and performance optimization</li>
+            </ul>
+        </section>
+
+        <section class="mt-4">
+            <h3>3. Data Storage and Security</h3>
+            
+            <h5>Local Storage</h5>
+            <ul>
+                <li>All data is stored locally on your infrastructure</li>
+                <li>No data is transmitted to external servers (except API calls you configure)</li>
+                <li>You maintain full control over your data</li>
+            </ul>
+
+            <h5>Security Measures</h5>
+            <ul>
+                <li>Encrypted database connections</li>
+                <li>Secure API key storage</li>
+                <li>Access control and authentication</li>
+                <li>Regular security updates</li>
+            </ul>
+        </section>
+
+        <section class="mt-4">
+            <h3>4. Third-Party Services</h3>
+            <p>PerfectMCP may integrate with third-party AI services based on your configuration:</p>
+            
+            <h5>AI API Providers</h5>
+            <ul>
+                <li><strong>OpenAI:</strong> Code analysis and improvement (if configured)</li>
+                <li><strong>Other AI Services:</strong> As configured by you</li>
+            </ul>
+            
+            <div class="alert alert-warning">
+                <strong>Important:</strong> When using external AI services, your code may be sent to these providers. 
+                Review their privacy policies and ensure compliance with your organization's data policies.
+            </div>
+        </section>
+
+        <section class="mt-4">
+            <h3>5. Data Retention</h3>
+            <ul>
+                <li>Session data is retained based on your configuration</li>
+                <li>Logs are rotated according to your settings</li>
+                <li>You can delete data at any time through the admin interface</li>
+                <li>No automatic data transmission to external parties</li>
+            </ul>
+        </section>
+
+        <section class="mt-4">
+            <h3>6. Your Rights</h3>
+            <p>As a self-hosted solution, you have complete control over your data:</p>
+            <ul>
+                <li><strong>Access:</strong> Full access to all stored data</li>
+                <li><strong>Modification:</strong> Ability to modify or update any data</li>
+                <li><strong>Deletion:</strong> Complete control over data deletion</li>
+                <li><strong>Portability:</strong> Export data in standard formats</li>
+            </ul>
+        </section>
+
+        <section class="mt-4">
+            <h3>7. Updates to This Policy</h3>
+            <p>This privacy policy may be updated with new versions of PerfectMCP. 
+            Check the documentation for the latest version.</p>
+        </section>
+
+        <section class="mt-4">
+            <h3>8. Contact Information</h3>
+            <p>For questions about this privacy policy or data handling:</p>
+            <ul>
+                <li><strong>Email:</strong> privacy@perfectmcp.com</li>
+                <li><strong>GitHub:</strong> <a href="https://github.com/perfectmcp/perfectmcp/issues" target="_blank">Report Issues</a></li>
+                <li><strong>Documentation:</strong> <a href="/docs/setup">Setup Guide</a></li>
+            </ul>
+        </section>
+
+        <div class="alert alert-success mt-4">
+            <strong>Self-Hosted Advantage:</strong> Since PerfectMCP runs on your infrastructure, 
+            you maintain complete control and ownership of your data.
+        </div>
+    </div>
+</div>
+{% endblock %}

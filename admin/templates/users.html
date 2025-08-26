@@ -1,0 +1,831 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - PerfectMPC Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-people"></i> User & API Key Management
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="bi bi-person-plus"></i> Add User
+            </button>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createApiKeyModal">
+                <i class="bi bi-key"></i> Create API Key
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- User & API Key Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Users
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-users">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Active API Keys
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="active-api-keys">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-key fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Admin Users
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="admin-users">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-shield-check fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Recent Logins
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="recent-logins">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clock-history fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Management Tabs -->
+<ul class="nav nav-tabs" id="management-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab">
+            <i class="bi bi-people"></i> Users
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="api-keys-tab" data-bs-toggle="tab" data-bs-target="#api-keys-panel" type="button" role="tab">
+            <i class="bi bi-key"></i> API Keys
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions-panel" type="button" role="tab">
+            <i class="bi bi-shield-lock"></i> Permissions
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="management-tab-content">
+    <!-- Users Panel -->
+    <div class="tab-pane fade show active" id="users-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">User Management</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>API Keys</th>
+                                <th>Created</th>
+                                <th>Last Login</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <tr>
+                                <td colspan="8" class="text-center">Loading users...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Keys Panel -->
+    <div class="tab-pane fade" id="api-keys-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0">API Key Management</h6>
+                <div>
+                    <button class="btn btn-danger btn-sm me-2" id="bulk-delete-btn" onclick="bulkDeleteApiKeys()" style="display: none;">
+                        <i class="bi bi-trash"></i> Delete Selected (<span id="selected-count">0</span>)
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateApiKeyModal()">
+                        <i class="bi bi-plus-circle"></i> Create API Key
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all-keys" onchange="toggleSelectAllKeys()" title="Select All">
+                                </th>
+                                <th>Key Name</th>
+                                <th>User</th>
+                                <th>Permissions</th>
+                                <th>Created</th>
+                                <th>Last Used</th>
+                                <th>Expires</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="api-keys-tbody">
+                            <tr>
+                                <td colspan="9" class="text-center">Loading API keys...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions Panel -->
+    <div class="tab-pane fade" id="permissions-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">Permission Management</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Available Permissions</h6>
+                        <div class="list-group" id="permissions-list">
+                            <div class="list-group-item">
+                                <strong>sessions:read</strong> - View sessions
+                            </div>
+                            <div class="list-group-item">
+                                <strong>sessions:write</strong> - Create/modify sessions
+                            </div>
+                            <div class="list-group-item">
+                                <strong>documents:read</strong> - View documents
+                            </div>
+                            <div class="list-group-item">
+                                <strong>documents:write</strong> - Upload/modify documents
+                            </div>
+                            <div class="list-group-item">
+                                <strong>code:analyze</strong> - Analyze code
+                            </div>
+                            <div class="list-group-item">
+                                <strong>admin:*</strong> - Full admin access
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Role Permissions</h6>
+                        <div class="accordion" id="rolePermissionsAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#adminRole">
+                                        Admin Role
+                                    </button>
+                                </h2>
+                                <div id="adminRole" class="accordion-collapse collapse show">
+                                    <div class="accordion-body">
+                                        <span class="badge bg-success">All Permissions (*)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#userRole">
+                                        User Role
+                                    </button>
+                                </h2>
+                                <div id="userRole" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <span class="badge bg-primary">sessions:*</span>
+                                        <span class="badge bg-primary">documents:*</span>
+                                        <span class="badge bg-primary">code:analyze</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#readonlyRole">
+                                        Read-Only Role
+                                    </button>
+                                </h2>
+                                <div id="readonlyRole" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <span class="badge bg-info">sessions:read</span>
+                                        <span class="badge bg-info">documents:read</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-user-form">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" required>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="readonly">Read-Only</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="create-api-key" checked>
+                        <label class="form-check-label" for="create-api-key">
+                            Create default API key
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">Create User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create API Key Modal -->
+<div class="modal fade" id="createApiKeyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create API Key</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-api-key-form">
+                    <div class="mb-3">
+                        <label for="api-key-user" class="form-label">User</label>
+                        <select class="form-select" id="api-key-user" required>
+                            <option value="">Select user...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="api-key-name" class="form-label">Key Name</label>
+                        <input type="text" class="form-control" id="api-key-name" placeholder="e.g., Production API Key" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="api-key-permissions" class="form-label">Permissions</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="*" id="perm-all">
+                            <label class="form-check-label" for="perm-all">All Permissions (*)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="sessions:read" id="perm-sessions-read">
+                            <label class="form-check-label" for="perm-sessions-read">Sessions: Read</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="sessions:write" id="perm-sessions-write">
+                            <label class="form-check-label" for="perm-sessions-write">Sessions: Write</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="documents:read" id="perm-docs-read">
+                            <label class="form-check-label" for="perm-docs-read">Documents: Read</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="documents:write" id="perm-docs-write">
+                            <label class="form-check-label" for="perm-docs-write">Documents: Write</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="code:analyze" id="perm-code-analyze">
+                            <label class="form-check-label" for="perm-code-analyze">Code: Analyze</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="api-key-expires" class="form-label">Expires (days)</label>
+                        <input type="number" class="form-control" id="api-key-expires" placeholder="Leave empty for no expiration">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="createApiKey()">Create API Key</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Key Display Modal -->
+<div class="modal fade" id="apiKeyDisplayModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New API Key Created</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>Important:</strong> Save this API key now. You won't be able to see it again!
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">API Key:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="new-api-key" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyApiKey()">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Usage Example:</label>
+                    <pre class="bg-light p-2 rounded"><code id="api-key-example"></code></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I've Saved the Key</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let users = [];
+    let apiKeys = [];
+
+    // Load users and API keys
+    async function loadUsersAndKeys() {
+        try {
+            // Load users
+            const usersResponse = await fetch('/api/auth/users');
+            const usersData = await usersResponse.json();
+            users = usersData.users || [];
+            
+            // Load API keys
+            const keysResponse = await fetch('/api/auth/api-keys');
+            const keysData = await keysResponse.json();
+            apiKeys = keysData.api_keys || [];
+            
+            updateUsersTable();
+            updateApiKeysTable();
+            updateStats();
+            populateUserSelect();
+            
+        } catch (error) {
+            showAlert('danger', `Error loading data: ${error.message}`);
+        }
+    }
+
+    // Update users table
+    function updateUsersTable() {
+        const tbody = document.getElementById('users-tbody');
+        
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No users found</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        users.forEach(user => {
+            const userApiKeys = apiKeys.filter(key => key.user_id === user.user_id);
+            const roleColor = user.role === 'admin' ? 'danger' : user.role === 'user' ? 'primary' : 'secondary';
+            const statusColor = user.active ? 'success' : 'secondary';
+            
+            html += `
+                <tr>
+                    <td><strong>${user.username}</strong></td>
+                    <td>${user.email}</td>
+                    <td><span class="badge bg-${roleColor}">${user.role}</span></td>
+                    <td>${userApiKeys.length}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                    <td><span class="badge bg-${statusColor}">${user.active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewUser('${user.user_id}')" title="View User">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editUser('${user.user_id}')" title="Edit User">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${user.user_id}', '${user.username}')" title="Delete User">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    // Update API keys table
+    function updateApiKeysTable() {
+        const tbody = document.getElementById('api-keys-tbody');
+        
+        if (apiKeys.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No API keys found</td></tr>';
+            return;
+        }
+
+        let html = '';
+        apiKeys.forEach(key => {
+            const user = users.find(u => u.user_id === key.user_id);
+            const statusColor = key.active ? 'success' : 'secondary';
+            const isExpired = key.expires_at && new Date(key.expires_at) < new Date();
+
+            html += `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="api-key-checkbox" value="${key.key_id}" onchange="updateBulkActions()">
+                    </td>
+                    <td><strong>${key.name}</strong></td>
+                    <td>${user ? user.username : 'Unknown'}</td>
+                    <td>
+                        ${key.permissions.map(p => `<span class="badge bg-info">${p}</span>`).join(' ')}
+                    </td>
+                    <td>${new Date(key.created_at).toLocaleDateString()}</td>
+                    <td>${key.last_used ? new Date(key.last_used).toLocaleDateString() : 'Never'}</td>
+                    <td>${key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Never'}</td>
+                    <td>
+                        <span class="badge bg-${isExpired ? 'warning' : statusColor}">
+                            ${isExpired ? 'Expired' : (key.active ? 'Active' : 'Inactive')}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="revokeApiKey('${key.key_id}')" title="Delete API Key">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    // Update statistics
+    function updateStats() {
+        document.getElementById('total-users').textContent = users.length;
+        document.getElementById('active-api-keys').textContent = apiKeys.filter(k => k.active).length;
+        document.getElementById('admin-users').textContent = users.filter(u => u.role === 'admin').length;
+        document.getElementById('recent-logins').textContent = users.filter(u => u.last_login).length;
+    }
+
+    // Populate user select dropdown
+    function populateUserSelect() {
+        const select = document.getElementById('api-key-user');
+        select.innerHTML = '<option value="">Select user...</option>';
+        
+        users.forEach(user => {
+            select.innerHTML += `<option value="${user.user_id}">${user.username} (${user.email})</option>`;
+        });
+    }
+
+    // Create user
+    async function createUser() {
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const role = document.getElementById('role').value;
+        const createApiKey = document.getElementById('create-api-key').checked;
+        
+        try {
+            const response = await fetch('/api/auth/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, role, create_api_key: createApiKey })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'User created successfully');
+                bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+                document.getElementById('create-user-form').reset();
+                loadUsersAndKeys();
+                
+                if (result.api_key) {
+                    showNewApiKey(result.api_key, username);
+                }
+            } else {
+                showAlert('danger', `Error: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error creating user: ${error.message}`);
+        }
+    }
+
+    // Create API key
+    async function createApiKey() {
+        const userId = document.getElementById('api-key-user').value;
+        const name = document.getElementById('api-key-name').value;
+        const expires = document.getElementById('api-key-expires').value;
+        
+        // Get selected permissions
+        const permissions = [];
+        document.querySelectorAll('#createApiKeyModal input[type="checkbox"]:checked').forEach(cb => {
+            permissions.push(cb.value);
+        });
+        
+        try {
+            const response = await fetch('/api/auth/api-keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    name: name,
+                    permissions: permissions,
+                    expires_days: expires ? parseInt(expires) : null
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'API key created successfully');
+                bootstrap.Modal.getInstance(document.getElementById('createApiKeyModal')).hide();
+                document.getElementById('create-api-key-form').reset();
+                loadUsersAndKeys();
+                
+                showNewApiKey(result.api_key, name);
+            } else {
+                showAlert('danger', `Error: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error creating API key: ${error.message}`);
+        }
+    }
+
+    // Show new API key
+    function showNewApiKey(apiKey, name) {
+        document.getElementById('new-api-key').value = apiKey;
+        document.getElementById('api-key-example').textContent = 
+            `curl -H "Authorization: Bearer ${apiKey}" http://192.168.0.78:8000/api/status`;
+        
+        new bootstrap.Modal(document.getElementById('apiKeyDisplayModal')).show();
+    }
+
+    // Show create API key modal
+    function showCreateApiKeyModal() {
+        new bootstrap.Modal(document.getElementById('createApiKeyModal')).show();
+    }
+
+    // Copy API key to clipboard
+    function copyApiKey() {
+        const apiKeyInput = document.getElementById('new-api-key');
+        apiKeyInput.select();
+        document.execCommand('copy');
+        showAlert('success', 'API key copied to clipboard');
+    }
+
+    // Revoke API key
+    async function revokeApiKey(keyId) {
+        if (!confirm('Are you sure you want to revoke this API key?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/auth/api-keys/${keyId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert('success', 'API key revoked successfully');
+                loadUsersAndKeys();
+            } else {
+                showAlert('danger', `Error: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error revoking API key:', error);
+            showAlert('danger', `Error revoking API key: ${error.message}`);
+        }
+    }
+
+    // Toggle select all checkboxes
+    function toggleSelectAllKeys() {
+        const selectAll = document.getElementById('select-all-keys');
+        const checkboxes = document.querySelectorAll('.api-key-checkbox');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+
+        updateBulkActions();
+    }
+
+    // Update bulk action buttons based on selection
+    function updateBulkActions() {
+        const checkboxes = document.querySelectorAll('.api-key-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+        const selectedCount = document.getElementById('selected-count');
+        const selectAll = document.getElementById('select-all-keys');
+
+        const selectedKeys = checkboxes.length;
+        const totalKeys = document.querySelectorAll('.api-key-checkbox').length;
+
+        // Update selected count
+        selectedCount.textContent = selectedKeys;
+
+        // Show/hide bulk actions
+        if (selectedKeys > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+        }
+
+        // Update select all checkbox state
+        if (selectedKeys === 0) {
+            selectAll.indeterminate = false;
+            selectAll.checked = false;
+        } else if (selectedKeys === totalKeys) {
+            selectAll.indeterminate = false;
+            selectAll.checked = true;
+        } else {
+            selectAll.indeterminate = true;
+            selectAll.checked = false;
+        }
+    }
+
+    // Bulk delete selected API keys
+    async function bulkDeleteApiKeys() {
+        const checkboxes = document.querySelectorAll('.api-key-checkbox:checked');
+        const selectedKeys = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selectedKeys.length === 0) {
+            showAlert('warning', 'No API keys selected');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to delete ${selectedKeys.length} API key${selectedKeys.length > 1 ? 's' : ''}?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        // Show progress
+        showAlert('info', `Deleting ${selectedKeys.length} API keys...`);
+
+        // Delete keys one by one
+        for (const keyId of selectedKeys) {
+            try {
+                const response = await fetch(`/api/auth/api-keys/${keyId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    errors.push(`${keyId}: ${result.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push(`${keyId}: ${error.message}`);
+            }
+        }
+
+        // Show results
+        if (successCount > 0 && errorCount === 0) {
+            showAlert('success', `Successfully deleted ${successCount} API key${successCount > 1 ? 's' : ''}`);
+        } else if (successCount > 0 && errorCount > 0) {
+            showAlert('warning', `Deleted ${successCount} API keys, but ${errorCount} failed. Errors: ${errors.join(', ')}`);
+        } else {
+            showAlert('danger', `Failed to delete API keys. Errors: ${errors.join(', ')}`);
+        }
+
+        // Reload the data
+        loadUsersAndKeys();
+    }
+
+    // View user details
+    function viewUser(userId) {
+        const user = users.find(u => u.user_id === userId);
+        if (user) {
+            showAlert('info', `Viewing user: ${user.username}`);
+            // Implement user details modal
+        }
+    }
+
+    // Edit user
+    function editUser(userId) {
+        const user = users.find(u => u.user_id === userId);
+        if (user) {
+            showAlert('info', `Editing user: ${user.username}`);
+            // Implement user edit modal
+        }
+    }
+
+    // Delete user
+    async function deleteUser(userId, username) {
+        // Check if user has active API keys
+        const userApiKeys = apiKeys.filter(key => key.user_id === userId && key.active);
+
+        let confirmMessage = `Are you sure you want to delete user "${username}"?`;
+        if (userApiKeys.length > 0) {
+            confirmMessage += `\n\nThis user has ${userApiKeys.length} active API key(s) that will also be deleted.`;
+        }
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/auth/users/${userId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert('success', `User "${username}" deleted successfully`);
+                loadUsersAndKeys();
+            } else {
+                showAlert('danger', `Error deleting user: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            showAlert('danger', `Error deleting user: ${error.message}`);
+        }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUsersAndKeys();
+    });
+</script>
+{% endblock %}

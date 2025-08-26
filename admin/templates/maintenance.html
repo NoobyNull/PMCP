@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance - PerfectMCP Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .maintenance-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .maintenance-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .status-badge {
+        font-size: 0.8em;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .cleanup-item {
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .cleanup-item.needs-attention {
+        border-left-color: #ffc107;
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+    
+    .cleanup-item.critical {
+        border-left-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .cleanup-item.healthy {
+        border-left-color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+    
+    .progress-container {
+        display: none;
+        margin-top: 1rem;
+    }
+    
+    .log-output {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        max-height: 300px;
+        overflow-y: auto;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-tools"></i> System Maintenance
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-primary" onclick="refreshStatus()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Status
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="runAllCleanup()">
+                <i class="bi bi-play-fill"></i> Run All Cleanup
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- System Status Overview -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card maintenance-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Database Size</h5>
+                <h3 class="text-primary" id="db-size">Loading...</h3>
+                <small class="text-muted">MongoDB + Redis</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card maintenance-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Log Files</h5>
+                <h3 class="text-warning" id="log-size">Loading...</h3>
+                <small class="text-muted">Total log size</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card maintenance-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Stale Sessions</h5>
+                <h3 class="text-danger" id="stale-sessions">Loading...</h3>
+                <small class="text-muted">Inactive > 24h</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card maintenance-card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Cache Entries</h5>
+                <h3 class="text-info" id="cache-entries">Loading...</h3>
+                <small class="text-muted">Redis cache</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Maintenance Tasks -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-check"></i> Available Maintenance Tasks
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="maintenance-tasks">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress and Logs -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-terminal"></i> Maintenance Logs
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="progress-container">
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" id="maintenance-progress"></div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span id="current-task">Ready</span>
+                        <span id="progress-text">0%</span>
+                    </div>
+                </div>
+                <div class="log-output" id="log-output"></div>
+                <div id="no-logs" class="text-muted text-center py-4">
+                    <i class="bi bi-info-circle"></i> No maintenance tasks have been run yet.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let maintenanceSocket = null;
+    
+    // Load maintenance status on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshStatus();
+        loadMaintenanceTasks();
+        connectWebSocket();
+    });
+    
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        maintenanceSocket = new WebSocket(`${protocol}//${window.location.host}/ws/maintenance`);
+        
+        maintenanceSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            handleMaintenanceUpdate(data);
+        };
+    }
+    
+    function handleMaintenanceUpdate(data) {
+        if (data.type === 'progress') {
+            updateProgress(data.progress, data.task, data.message);
+        } else if (data.type === 'log') {
+            appendLog(data.message);
+        } else if (data.type === 'complete') {
+            completeTask(data.task, data.success);
+        }
+    }
+    
+    async function refreshStatus() {
+        try {
+            const response = await fetch('/api/maintenance/status');
+            const data = await response.json();
+            
+            document.getElementById('db-size').textContent = data.database_size || 'N/A';
+            document.getElementById('log-size').textContent = data.log_size || 'N/A';
+            document.getElementById('stale-sessions').textContent = data.stale_sessions || '0';
+            document.getElementById('cache-entries').textContent = data.cache_entries || '0';
+            
+        } catch (error) {
+            console.error('Error refreshing status:', error);
+        }
+    }
+    
+    async function loadMaintenanceTasks() {
+        try {
+            const response = await fetch('/api/maintenance/tasks');
+            const tasks = await response.json();
+            
+            const container = document.getElementById('maintenance-tasks');
+            container.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const taskElement = createTaskElement(task);
+                container.appendChild(taskElement);
+            });
+            
+        } catch (error) {
+            console.error('Error loading maintenance tasks:', error);
+        }
+    }
+    
+    function createTaskElement(task) {
+        const div = document.createElement('div');
+        div.className = `cleanup-item card mb-3 ${task.priority}`;
+        div.innerHTML = `
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-1">${task.name}</h6>
+                        <p class="mb-1 text-muted">${task.description}</p>
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i> Last run: ${task.last_run || 'Never'}
+                            <span class="ms-3"><i class="bi bi-speedometer2"></i> Est. time: ${task.estimated_time}</span>
+                        </small>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <span class="badge status-badge ${task.status_class}">${task.status}</span>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button class="btn btn-outline-primary btn-sm" onclick="runTask('${task.id}')">
+                            <i class="bi bi-play"></i> Run
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+    
+    async function runTask(taskId) {
+        showProgress();
+        try {
+            const response = await fetch(`/api/maintenance/run/${taskId}`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                appendLog(`Started task: ${taskId}`);
+            } else {
+                appendLog(`Failed to start task: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error running task:', error);
+            appendLog(`Error: ${error.message}`);
+        }
+    }
+    
+    async function runAllCleanup() {
+        showProgress();
+        try {
+            const response = await fetch('/api/maintenance/run-all', {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                appendLog('Started all maintenance tasks');
+            } else {
+                appendLog(`Failed to start tasks: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error running all tasks:', error);
+            appendLog(`Error: ${error.message}`);
+        }
+    }
+    
+    function showProgress() {
+        document.querySelector('.progress-container').style.display = 'block';
+        document.getElementById('log-output').style.display = 'block';
+        document.getElementById('no-logs').style.display = 'none';
+    }
+    
+    function updateProgress(progress, task, message) {
+        const progressBar = document.getElementById('maintenance-progress');
+        const progressText = document.getElementById('progress-text');
+        const currentTask = document.getElementById('current-task');
+        
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `${progress}%`;
+        currentTask.textContent = task || 'Processing...';
+        
+        if (message) {
+            appendLog(message);
+        }
+    }
+    
+    function appendLog(message) {
+        const logOutput = document.getElementById('log-output');
+        const timestamp = new Date().toLocaleTimeString();
+        logOutput.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+    
+    function completeTask(task, success) {
+        const status = success ? 'SUCCESS' : 'FAILED';
+        appendLog(`Task ${task} completed: ${status}`);
+        refreshStatus();
+        loadMaintenanceTasks();
+    }
+</script>
+{% endblock %}

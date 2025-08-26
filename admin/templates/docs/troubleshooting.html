@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Troubleshooting Guide - PerfectMCP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-question-circle"></i> Troubleshooting Guide</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list"></i> Common Issues</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><a href="#server-issues" class="text-decoration-none">Server Issues</a></li>
+                    <li><a href="#database-issues" class="text-decoration-none">Database Issues</a></li>
+                    <li><a href="#api-issues" class="text-decoration-none">API Issues</a></li>
+                    <li><a href="#performance" class="text-decoration-none">Performance</a></li>
+                    <li><a href="#logs" class="text-decoration-none">Log Analysis</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <section id="server-issues">
+                    <h3><i class="bi bi-server"></i> Server Issues</h3>
+                    
+                    <div class="accordion" id="serverAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#server-wont-start">
+                                    Server Won't Start
+                                </button>
+                            </h2>
+                            <div id="server-wont-start" class="accordion-collapse collapse show">
+                                <div class="accordion-body">
+                                    <h6>Symptoms:</h6>
+                                    <ul>
+                                        <li>Server exits immediately</li>
+                                        <li>Port already in use errors</li>
+                                        <li>Permission denied errors</li>
+                                    </ul>
+                                    
+                                    <h6>Solutions:</h6>
+                                    <pre><code># Check if port is in use
+sudo netstat -tlnp | grep :8000
+
+# Kill process using port
+sudo kill -9 $(sudo lsof -t -i:8000)
+
+# Check permissions
+ls -la /opt/PerfectMCP/
+sudo chown -R $USER:$USER /opt/PerfectMCP/</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#server-crashes">
+                                    Server Crashes
+                                </button>
+                            </h2>
+                            <div id="server-crashes" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <h6>Check logs:</h6>
+                                    <pre><code>tail -f logs/server.log</code></pre>
+                                    
+                                    <h6>Common causes:</h6>
+                                    <ul>
+                                        <li>Database connection failures</li>
+                                        <li>Missing dependencies</li>
+                                        <li>Configuration errors</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="database-issues" class="mt-4">
+                    <h3><i class="bi bi-database"></i> Database Issues</h3>
+                    
+                    <div class="accordion" id="databaseAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#redis-connection">
+                                    Redis Connection Failed
+                                </button>
+                            </h2>
+                            <div id="redis-connection" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <h6>Check Redis status:</h6>
+                                    <pre><code>sudo systemctl status redis-server
+redis-cli ping</code></pre>
+                                    
+                                    <h6>Restart Redis:</h6>
+                                    <pre><code>sudo systemctl restart redis-server</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mongodb-connection">
+                                    MongoDB Connection Failed
+                                </button>
+                            </h2>
+                            <div id="mongodb-connection" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <h6>Check MongoDB status:</h6>
+                                    <pre><code>sudo systemctl status mongod
+mongo --eval "db.runCommand('ping')"</code></pre>
+                                    
+                                    <h6>Restart MongoDB:</h6>
+                                    <pre><code>sudo systemctl restart mongod</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="api-issues" class="mt-4">
+                    <h3><i class="bi bi-cloud"></i> API Issues</h3>
+                    
+                    <div class="alert alert-warning">
+                        <strong>API Key Issues:</strong> Most API problems are related to missing or invalid API keys.
+                    </div>
+                    
+                    <h5>OpenAI API Issues</h5>
+                    <pre><code># Test OpenAI API key
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     https://api.openai.com/v1/models</code></pre>
+                    
+                    <h5>Rate Limiting</h5>
+                    <p>If you encounter rate limiting:</p>
+                    <ul>
+                        <li>Check your API usage in the provider dashboard</li>
+                        <li>Implement request throttling</li>
+                        <li>Consider upgrading your API plan</li>
+                    </ul>
+                </section>
+
+                <section id="performance" class="mt-4">
+                    <h3><i class="bi bi-speedometer2"></i> Performance Issues</h3>
+                    
+                    <h5>High Memory Usage</h5>
+                    <pre><code># Check memory usage
+free -h
+ps aux | grep python</code></pre>
+                    
+                    <h5>Slow Response Times</h5>
+                    <ul>
+                        <li>Check database performance</li>
+                        <li>Monitor API response times</li>
+                        <li>Review log files for bottlenecks</li>
+                    </ul>
+                    
+                    <h5>Optimization Tips</h5>
+                    <ul>
+                        <li>Increase worker processes in configuration</li>
+                        <li>Enable Redis caching</li>
+                        <li>Optimize database queries</li>
+                    </ul>
+                </section>
+
+                <section id="logs" class="mt-4">
+                    <h3><i class="bi bi-journal-text"></i> Log Analysis</h3>
+                    
+                    <h5>Log Locations</h5>
+                    <ul>
+                        <li><strong>Server logs:</strong> <code>logs/server.log</code></li>
+                        <li><strong>Admin logs:</strong> <code>logs/admin.log</code></li>
+                        <li><strong>System logs:</strong> <code>/var/log/syslog</code></li>
+                    </ul>
+                    
+                    <h5>Useful Commands</h5>
+                    <pre><code># Follow server logs
+tail -f logs/server.log
+
+# Search for errors
+grep -i error logs/server.log
+
+# Check last 100 lines
+tail -n 100 logs/server.log</code></pre>
+                    
+                    <div class="alert alert-info">
+                        <strong>Need Help?</strong> If you can't resolve the issue, please:
+                        <ul class="mb-0">
+                            <li>Check the relevant log files</li>
+                            <li>Note the exact error message</li>
+                            <li>Contact support with the details</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

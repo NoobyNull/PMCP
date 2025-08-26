@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}MCP Integration Guide - PerfectMCP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-plugin"></i> MCP Integration Guide</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list"></i> MCP Topics</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><a href="#overview" class="text-decoration-none">What is MCP?</a></li>
+                    <li><a href="#augment" class="text-decoration-none">Augment Integration</a></li>
+                    <li><a href="#cline" class="text-decoration-none">Cline Integration</a></li>
+                    <li><a href="#custom" class="text-decoration-none">Custom Integration</a></li>
+                    <li><a href="#troubleshooting" class="text-decoration-none">Troubleshooting</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <section id="overview">
+                    <h3><i class="bi bi-info-circle"></i> What is MCP?</h3>
+                    <p>Model Context Protocol (MCP) is a standardized protocol for AI tools to communicate with external services and data sources.</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>PerfectMCP Benefits:</strong>
+                        <ul class="mb-0">
+                            <li>Seamless integration with AI development tools</li>
+                            <li>Persistent memory across sessions</li>
+                            <li>Advanced code analysis capabilities</li>
+                            <li>Document search and RAG functionality</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="augment" class="mt-4">
+                    <h3><i class="bi bi-robot"></i> Augment Integration</h3>
+                    <p>Integrate PerfectMCP with Augment for enhanced AI-powered development.</p>
+                    
+                    <h5>Configuration</h5>
+                    <p>Add this configuration to your Augment settings:</p>
+                    <pre><code>{
+  "mcpServers": {
+    "perfectmcp": {
+      "command": "node",
+      "args": ["/path/to/mcp-client.js"],
+      "env": {
+        "MCP_SERVER_URL": "http://192.168.0.78:8000"
+      }
+    }
+  }
+}</code></pre>
+
+                    <h5>Available Tools</h5>
+                    <ul>
+                        <li><strong>memory_context</strong> - Persistent session memory</li>
+                        <li><strong>code_analysis</strong> - AI-powered code review</li>
+                        <li><strong>document_search</strong> - Knowledge base search</li>
+                    </ul>
+                </section>
+
+                <section id="cline" class="mt-4">
+                    <h3><i class="bi bi-terminal"></i> Cline Integration</h3>
+                    <p>Connect Cline VSCode extension with PerfectMCP for enhanced capabilities.</p>
+                    
+                    <h5>VSCode Settings</h5>
+                    <p>Add to your VSCode settings.json:</p>
+                    <pre><code>{
+  "cline.mcpServers": [
+    {
+      "name": "perfectmcp",
+      "url": "http://192.168.0.78:8000",
+      "enabled": true
+    }
+  ]
+}</code></pre>
+
+                    <h5>Features</h5>
+                    <ul>
+                        <li>Context-aware code suggestions</li>
+                        <li>Project memory persistence</li>
+                        <li>Intelligent code analysis</li>
+                        <li>Document-based assistance</li>
+                    </ul>
+                </section>
+
+                <section id="custom" class="mt-4">
+                    <h3><i class="bi bi-code-square"></i> Custom Integration</h3>
+                    <p>Build your own MCP client to integrate with PerfectMCP.</p>
+                    
+                    <h5>Basic MCP Client Example</h5>
+                    <pre><code>import json
+import requests
+
+class MCPClient:
+    def __init__(self, server_url):
+        self.server_url = server_url
+    
+    def call_tool(self, tool_name, arguments):
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": tool_name,
+                "arguments": arguments
+            }
+        }
+        
+        response = requests.post(self.server_url, json=payload)
+        return response.json()
+
+# Usage
+client = MCPClient("http://192.168.0.78:8000")
+result = client.call_tool("code_analysis", {
+    "code": "def hello(): print('world')",
+    "language": "python"
+})</code></pre>
+                </section>
+
+                <section id="troubleshooting" class="mt-4">
+                    <h3><i class="bi bi-question-circle"></i> Troubleshooting</h3>
+                    
+                    <h5>Common Issues</h5>
+                    
+                    <div class="accordion" id="troubleshootingAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#connection-issues">
+                                    Connection Issues
+                                </button>
+                            </h2>
+                            <div id="connection-issues" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <p>If you can't connect to PerfectMCP:</p>
+                                    <ul>
+                                        <li>Check if the server is running: <code>curl http://192.168.0.78:8000/health</code></li>
+                                        <li>Verify firewall settings allow port 8000</li>
+                                        <li>Ensure the server IP is correct in your configuration</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tool-errors">
+                                    Tool Call Errors
+                                </button>
+                            </h2>
+                            <div id="tool-errors" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <p>If tool calls fail:</p>
+                                    <ul>
+                                        <li>Check the tool name is correct</li>
+                                        <li>Verify required arguments are provided</li>
+                                        <li>Check server logs for detailed error messages</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

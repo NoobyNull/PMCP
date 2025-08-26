@@ -1,0 +1,35 @@
+[Unit]
+Description=PerfectMPC Admin Server
+Documentation=https://github.com/perfectmpc/perfectmpc
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/PerfectMPC
+Environment=PATH=/opt/PerfectMPC/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONPATH=/opt/PerfectMPC/src:/opt/PerfectMPC
+Environment=VIRTUAL_ENV=/opt/PerfectMPC/venv
+ExecStart=/opt/PerfectMPC/venv/bin/python /opt/PerfectMPC/admin_server.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pmpc
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/PerfectMPC
+ProtectHome=true
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

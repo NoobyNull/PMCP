@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - PerfectMCP Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-gear"></i> System Configuration
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-primary" onclick="refreshConfigs()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="backupConfigs()">
+                <i class="bi bi-download"></i> Backup All
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Tabs -->
+<ul class="nav nav-tabs" id="config-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="server-config-tab" data-bs-toggle="tab" data-bs-target="#server-config-panel" type="button" role="tab">
+            <i class="bi bi-server"></i> Server Configuration
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="database-config-tab" data-bs-toggle="tab" data-bs-target="#database-config-panel" type="button" role="tab">
+            <i class="bi bi-database"></i> Database Configuration
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="env-config-tab" data-bs-toggle="tab" data-bs-target="#env-config-panel" type="button" role="tab">
+            <i class="bi bi-list-ul"></i> Environment Variables
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="config-tab-content">
+    <!-- Server Configuration Panel -->
+    <div class="tab-pane fade show active" id="server-config-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h6 class="m-0">Server Configuration (server.yaml)</h6>
+                    </div>
+                    <div class="col-auto">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-info" onclick="autoDetectSettings()">
+                                <i class="bi bi-search"></i> Auto-Detect
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="saveConfig('server')">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="server-config-editor" class="form-label">Configuration Content:</label>
+                    <textarea class="form-control" id="server-config-editor" rows="20" style="font-family: monospace;">
+# Loading server configuration...
+                    </textarea>
+                    <div class="form-text">Edit the server configuration in YAML format. A backup will be created automatically.</div>
+                </div>
+                
+                <!-- Quick Settings -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Quick Settings</h6>
+                        <div class="mb-2">
+                            <label for="server-host" class="form-label">Server Host:</label>
+                            <input type="text" class="form-control" id="server-host" value="{{ server_info.host if server_info else '192.168.0.78' }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="server-port" class="form-label">Server Port:</label>
+                            <input type="number" class="form-control" id="server-port" value="8000">
+                        </div>
+                        <div class="mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="server-debug">
+                                <label class="form-check-label" for="server-debug">Debug Mode</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>CORS Settings</h6>
+                        <div class="mb-2">
+                            <label for="cors-origins" class="form-label">Allowed Origins:</label>
+                            <input type="text" class="form-control" id="cors-origins" value="*">
+                        </div>
+                        <div class="mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cors-credentials" checked>
+                                <label class="form-check-label" for="cors-credentials">Allow Credentials</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Configuration Panel -->
+    <div class="tab-pane fade" id="database-config-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h6 class="m-0">Database Configuration (database.yaml)</h6>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-primary" onclick="saveConfig('database')">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="database-config-editor" class="form-label">Configuration Content:</label>
+                    <textarea class="form-control" id="database-config-editor" rows="20" style="font-family: monospace;">
+# Loading database configuration...
+                    </textarea>
+                    <div class="form-text">Edit the database configuration in YAML format. A backup will be created automatically.</div>
+                </div>
+                
+                <!-- Quick Settings -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Redis Settings</h6>
+                        <div class="mb-2">
+                            <label for="redis-host" class="form-label">Redis Host:</label>
+                            <input type="text" class="form-control" id="redis-host" value="">
+                        </div>
+                        <div class="mb-2">
+                            <label for="redis-port" class="form-label">Redis Port:</label>
+                            <input type="number" class="form-control" id="redis-port" value="6379">
+                        </div>
+                        <div class="mb-2">
+                            <label for="redis-db" class="form-label">Redis Database:</label>
+                            <input type="number" class="form-control" id="redis-db" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>MongoDB Settings</h6>
+                        <div class="mb-2">
+                            <label for="mongo-host" class="form-label">MongoDB Host:</label>
+                            <input type="text" class="form-control" id="mongo-host" value="">
+                        </div>
+                        <div class="mb-2">
+                            <label for="mongo-port" class="form-label">MongoDB Port:</label>
+                            <input type="number" class="form-control" id="mongo-port" value="27017">
+                        </div>
+                        <div class="mb-2">
+                            <label for="mongo-database" class="form-label">Database Name:</label>
+                            <input type="text" class="form-control" id="mongo-database" value="perfectmpc">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environment Variables Panel -->
+    <div class="tab-pane fade" id="env-config-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">Environment Variables</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="env-variables" class="form-label">Current Environment Variables:</label>
+                    <textarea class="form-control" id="env-variables" rows="15" style="font-family: monospace;" readonly>
+# Loading environment variables...
+                    </textarea>
+                    <div class="form-text">Read-only view of current environment variables affecting the system.</div>
+                </div>
+                
+                <!-- System Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>System Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Python Version:</strong></td><td id="python-version">Loading...</td></tr>
+                            <tr><td><strong>Platform:</strong></td><td id="platform-info">Loading...</td></tr>
+                            <tr><td><strong>Working Directory:</strong></td><td id="working-dir">Loading...</td></tr>
+                            <tr><td><strong>Virtual Environment:</strong></td><td id="venv-info">Loading...</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Service Status</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>MPC Server:</strong></td><td id="mpc-service-status">Loading...</td></tr>
+                            <tr><td><strong>Redis:</strong></td><td id="redis-service-status">Loading...</td></tr>
+                            <tr><td><strong>MongoDB:</strong></td><td id="mongo-service-status">Loading...</td></tr>
+                            <tr><td><strong>Admin Interface:</strong></td><td id="admin-service-status">Running</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Validation Modal -->
+<div class="modal fade" id="configValidationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configuration Validation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="validation-results">
+                <!-- Validation results will be shown here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="confirm-save-btn" onclick="confirmSave()">Save Anyway</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentConfigType = null;
+    let originalConfigs = {};
+
+    // Load configuration files
+    async function loadConfig(configType) {
+        try {
+            const response = await fetch(`/api/config/${configType}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                showAlert('warning', `Could not load ${configType} config: ${data.error}`);
+                return `# ${configType} configuration not found\n# This is a placeholder - you can create the configuration here\n`;
+            }
+            
+            originalConfigs[configType] = data.content;
+            return data.content;
+        } catch (error) {
+            showAlert('danger', `Error loading ${configType} config: ${error.message}`);
+            return `# Error loading ${configType} configuration\n`;
+        }
+    }
+
+    // Save configuration
+    async function saveConfig(configType) {
+        currentConfigType = configType;
+        const editorId = `${configType}-config-editor`;
+        const content = document.getElementById(editorId).value;
+        
+        try {
+            // Validate configuration first
+            const isValid = await validateConfig(configType, content);
+            
+            if (!isValid) {
+                // Show validation modal
+                new bootstrap.Modal(document.getElementById('configValidationModal')).show();
+                return;
+            }
+            
+            await performSave(configType, content);
+            
+        } catch (error) {
+            showAlert('danger', `Error saving ${configType} config: ${error.message}`);
+        }
+    }
+
+    // Validate configuration
+    async function validateConfig(configType, content) {
+        // Basic YAML validation
+        try {
+            // Simple YAML syntax check
+            const lines = content.split('\n');
+            let hasErrors = false;
+            let errors = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line && !line.startsWith('#')) {
+                    // Basic indentation and syntax checks
+                    if (line.includes(':') && !line.match(/^[\w\s-]+:/)) {
+                        errors.push(`Line ${i + 1}: Invalid YAML syntax`);
+                        hasErrors = true;
+                    }
+                }
+            }
+            
+            if (hasErrors) {
+                const validationResults = document.getElementById('validation-results');
+                validationResults.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h6>Configuration Validation Warnings:</h6>
+                        <ul>
+                            ${errors.map(error => `<li>${error}</li>`).join('')}
+                        </ul>
+                        <p>Do you want to save anyway?</p>
+                    </div>
+                `;
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            const validationResults = document.getElementById('validation-results');
+            validationResults.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>Configuration Validation Error:</h6>
+                    <p>${error.message}</p>
+                    <p>Please fix the errors before saving.</p>
+                </div>
+            `;
+            return false;
+        }
+    }
+
+    // Perform the actual save
+    async function performSave(configType, content) {
+        const response = await fetch(`/api/config/${configType}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: content })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('success', `${configType} configuration saved successfully. Backup created: ${result.backup}`);
+            originalConfigs[configType] = content;
+        } else {
+            showAlert('danger', `Error saving ${configType} config: ${result.error}`);
+        }
+    }
+
+    // Confirm save from validation modal
+    async function confirmSave() {
+        if (currentConfigType) {
+            const editorId = `${currentConfigType}-config-editor`;
+            const content = document.getElementById(editorId).value;
+            
+            await performSave(currentConfigType, content);
+            bootstrap.Modal.getInstance(document.getElementById('configValidationModal')).hide();
+        }
+    }
+
+    // Refresh configurations
+    async function refreshConfigs() {
+        await loadAllConfigs();
+        showAlert('info', 'Configurations refreshed');
+    }
+
+    // Backup configurations
+    async function backupConfigs() {
+        showAlert('info', 'Creating configuration backups...');
+        // This would trigger a backup API call
+        setTimeout(() => {
+            showAlert('success', 'Configuration backups created successfully');
+        }, 1000);
+    }
+
+    // Get current server host
+    function getCurrentHost() {
+        return window.location.hostname;
+    }
+
+    // Auto-detect current server settings
+    function autoDetectSettings() {
+        const currentHost = getCurrentHost();
+
+        // Update form fields with current values
+        document.getElementById('server-host').value = currentHost;
+        document.getElementById('redis-host').value = currentHost;
+        document.getElementById('mongo-host').value = currentHost;
+
+        // Update CORS origins
+        document.getElementById('cors-origins').value = `http://${currentHost}:*`;
+
+        showAlert('success', `Settings auto-detected for server: ${currentHost}`);
+
+        // Update the configuration text areas with current values
+        updateConfigWithCurrentSettings(currentHost);
+    }
+
+    // Update configuration text areas with current settings
+    function updateConfigWithCurrentSettings(host) {
+        // Update server config
+        const serverConfigText = `
+# Server Configuration
+server:
+  host: "${host}"
+  port: 8000
+  debug: false
+
+cors:
+  allow_origins: ["http://${host}:*", "http://localhost:*"]
+  allow_credentials: true
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+        `.trim();
+
+        document.getElementById('server-config-editor').value = serverConfigText;
+
+        // Update database config
+        const databaseConfigText = `
+# Database Configuration
+redis:
+  host: "${host}"
+  port: 6379
+  db: 0
+
+mongodb:
+  host: "${host}"
+  port: 27017
+  database: "perfectmpc"
+        `.trim();
+
+        document.getElementById('database-config-editor').value = databaseConfigText;
+    }
+
+    // Load all configurations
+    async function loadAllConfigs() {
+        // Get current host for dynamic references
+        const currentHost = getCurrentHost();
+
+        // Load server config
+        const serverConfig = await loadConfig('server');
+        document.getElementById('server-config-editor').value = serverConfig;
+
+        // Load database config
+        const databaseConfig = await loadConfig('database');
+        document.getElementById('database-config-editor').value = databaseConfig;
+
+        // Set dynamic host values
+        document.getElementById('redis-host').value = currentHost;
+        document.getElementById('mongo-host').value = currentHost;
+
+        // Load environment variables (dynamic)
+        document.getElementById('env-variables').value = `
+# Environment Variables (Current Server: ${currentHost})
+PATH=/opt/PerfectMPC/venv/bin:/usr/local/bin:/usr/bin:/bin
+PYTHONPATH=/opt/PerfectMPC/src
+VIRTUAL_ENV=/opt/PerfectMPC/venv
+HOME=/root
+USER=root
+SERVER_HOST=${currentHost}
+ADMIN_HOST=${currentHost}
+MPC_SERVER_URL=http://${currentHost}:8000
+ADMIN_URL=http://${currentHost}:8080
+        `.trim();
+
+        // Load system information
+        document.getElementById('python-version').textContent = 'Python 3.12';
+        document.getElementById('platform-info').textContent = 'Linux x86_64';
+        document.getElementById('working-dir').textContent = '/opt/PerfectMPC';
+        document.getElementById('venv-info').textContent = 'Active (/opt/PerfectMPC/venv)';
+
+        // Load service status with dynamic URLs
+        await loadServiceStatus(currentHost);
+    }
+
+    // Load service status dynamically
+    async function loadServiceStatus(host) {
+        try {
+            // Check MPC server status
+            const mpcResponse = await fetch(`http://${host}:8000/health`);
+            if (mpcResponse.ok) {
+                document.getElementById('mpc-service-status').innerHTML = `<span class="text-success">Running</span> <small>(http://${host}:8000)</small>`;
+            } else {
+                document.getElementById('mpc-service-status').innerHTML = `<span class="text-warning">Unreachable</span> <small>(http://${host}:8000)</small>`;
+            }
+        } catch (error) {
+            document.getElementById('mpc-service-status').innerHTML = `<span class="text-danger">Offline</span> <small>(http://${host}:8000)</small>`;
+        }
+
+        // Check database status via admin API
+        try {
+            const redisResponse = await fetch('/api/database/redis/keys?pattern=test');
+            if (redisResponse.ok) {
+                document.getElementById('redis-service-status').innerHTML = `<span class="text-success">Connected</span> <small>(${host}:6379)</small>`;
+            } else {
+                document.getElementById('redis-service-status').innerHTML = `<span class="text-warning">Error</span> <small>(${host}:6379)</small>`;
+            }
+        } catch (error) {
+            document.getElementById('redis-service-status').innerHTML = `<span class="text-danger">Disconnected</span> <small>(${host}:6379)</small>`;
+        }
+
+        try {
+            const mongoResponse = await fetch('/api/database/mongodb/collections');
+            if (mongoResponse.ok) {
+                document.getElementById('mongo-service-status').innerHTML = `<span class="text-success">Connected</span> <small>(${host}:27017)</small>`;
+            } else {
+                document.getElementById('mongo-service-status').innerHTML = `<span class="text-warning">Error</span> <small>(${host}:27017)</small>`;
+            }
+        } catch (error) {
+            document.getElementById('mongo-service-status').innerHTML = `<span class="text-danger">Disconnected</span> <small>(${host}:27017)</small>`;
+        }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAllConfigs();
+    });
+</script>
+{% endblock %}

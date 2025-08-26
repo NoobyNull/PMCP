@@ -1,0 +1,1239 @@
+{% extends "base.html" %}
+
+{% block title %}Code Analysis - PerfectMCP Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-code-slash"></i> Code Analysis Management
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-primary" onclick="refreshAnalysis()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="runAnalysis()">
+                <i class="bi bi-play-circle"></i> Run Analysis
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="openAIChat()">
+                <i class="bi bi-chat-dots"></i> Open Chat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Analyses
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-analyses">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-graph-up fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Avg Quality Score
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="avg-quality-score">
+                            0.0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-star fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Improvements Made
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="improvements-count">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-arrow-up-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Active Sessions
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="active-sessions">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-collection fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Tabs -->
+<ul class="nav nav-tabs" id="analysis-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-panel" type="button" role="tab">
+            <i class="bi bi-clock-history"></i> Analysis History
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="metrics-tab" data-bs-toggle="tab" data-bs-target="#metrics-panel" type="button" role="tab">
+            <i class="bi bi-graph-up"></i> Quality Metrics
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="improvements-tab" data-bs-toggle="tab" data-bs-target="#improvements-panel" type="button" role="tab">
+            <i class="bi bi-lightbulb"></i> Improvement Suggestions
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-panel" type="button" role="tab">
+            <i class="bi bi-gear"></i> AI Settings
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="analysis-tab-content">
+    <!-- Analysis History Panel -->
+    <div class="tab-pane fade show active" id="history-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">Recent Code Analyses</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Session ID</th>
+                                <th>Timestamp</th>
+                                <th>Language</th>
+                                <th>Quality Score</th>
+                                <th>Issues Found</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analysis-history-tbody">
+                            <tr>
+                                <td colspan="6" class="text-center">Loading analysis history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Metrics Panel -->
+    <div class="tab-pane fade" id="metrics-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">Code Quality Metrics</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Quality Score Trend</h6>
+                        <canvas id="qualityTrendChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Language Distribution</h6>
+                        <canvas id="languageChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6>Detailed Metrics</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Current</th>
+                                        <th>Average</th>
+                                        <th>Best</th>
+                                        <th>Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="metrics-tbody">
+                                    <tr>
+                                        <td>Code Complexity</td>
+                                        <td><span class="badge bg-success">Low</span></td>
+                                        <td>2.3</td>
+                                        <td>1.8</td>
+                                        <td><i class="bi bi-arrow-down text-success"></i></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Test Coverage</td>
+                                        <td><span class="badge bg-warning">Medium</span></td>
+                                        <td>67%</td>
+                                        <td>89%</td>
+                                        <td><i class="bi bi-arrow-up text-success"></i></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Documentation</td>
+                                        <td><span class="badge bg-info">Good</span></td>
+                                        <td>78%</td>
+                                        <td>92%</td>
+                                        <td><i class="bi bi-dash text-muted"></i></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Code Style</td>
+                                        <td><span class="badge bg-success">Excellent</span></td>
+                                        <td>94%</td>
+                                        <td>98%</td>
+                                        <td><i class="bi bi-arrow-up text-success"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Improvement Suggestions Panel -->
+    <div class="tab-pane fade" id="improvements-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">Improvement Suggestions</h6>
+            </div>
+            <div class="card-body">
+                <div id="improvements-list">
+                    <div class="list-group">
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Add Unit Tests</h6>
+                                <small class="text-warning">High Priority</small>
+                            </div>
+                            <p class="mb-1">Consider adding unit tests for the authentication module to improve code coverage.</p>
+                            <small class="text-muted">Suggested for session: auth-module-review</small>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Refactor Large Function</h6>
+                                <small class="text-info">Medium Priority</small>
+                            </div>
+                            <p class="mb-1">The process_data function is quite large. Consider breaking it into smaller, more focused functions.</p>
+                            <small class="text-muted">Suggested for session: data-processing-optimization</small>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Add Documentation</h6>
+                                <small class="text-success">Low Priority</small>
+                            </div>
+                            <p class="mb-1">Add docstrings to public methods in the API module for better documentation.</p>
+                            <small class="text-muted">Suggested for session: api-documentation</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Settings Panel -->
+    <div class="tab-pane fade" id="settings-panel" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0">
+                    <i class="bi bi-robot"></i> AI Code Review Configuration
+                </h6>
+            </div>
+            <div class="card-body">
+                <!-- Dynamic Model Loading Info -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Smart Model Detection</h6>
+                    <p class="mb-2">This system automatically loads <strong>your actual available models</strong> from each AI provider.</p>
+                    <ul class="mb-0 small">
+                        <li>Enter your API key → Models load automatically</li>
+                        <li>Only shows models you have access to</li>
+                        <li>Recommended models marked with ⭐</li>
+                        <li>Missing Gemini 2.0? Check your Google AI Studio account access</li>
+                    </ul>
+                </div>
+
+                <form id="ai-settings-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>AI Provider Settings</h6>
+
+                            <div class="mb-3">
+                                <label for="ai-provider" class="form-label">AI Provider</label>
+                                <select class="form-select" id="ai-provider" name="provider">
+                                    <option value="openai">OpenAI (GPT-4, GPT-3.5)</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="gemini">Google Gemini</option>
+                                    <option value="custom">Custom API</option>
+                                </select>
+                                <div class="form-text">Choose your preferred AI provider for code analysis</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="ai-model" class="form-label">Model</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="ai-model" name="model" disabled>
+                                        <option value="">Enter API key first to load available models</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" type="button" id="refresh-models-btn" onclick="refreshAvailableModels()" disabled>
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    <strong>Smart Model Loading:</strong> Available models load automatically from your account when you enter a valid API key.
+                                    <br><small class="text-muted">
+                                        Don't see Gemini 2.0 Flash? Check your Google AI Studio account for model access.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="api-key" class="form-label">API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="api-key" name="api_key" placeholder="Enter your API key">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleApiKeyVisibility()">
+                                        <i class="bi bi-eye" id="api-key-toggle-icon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    Your API key is encrypted and stored securely<br>
+                                    <small>
+                                        • OpenAI: starts with "sk-"<br>
+                                        • Anthropic: starts with "sk-ant-"<br>
+                                        • Gemini: starts with "AIza"
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="custom-api-base" style="display: none;">
+                                <label for="api-base" class="form-label">Custom API Base URL</label>
+                                <input type="url" class="form-control" id="api-base" name="api_base" placeholder="https://api.example.com/v1">
+                                <div class="form-text">For custom AI providers or self-hosted models</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>Analysis Settings</h6>
+
+                            <div class="mb-3">
+                                <label for="max-tokens" class="form-label">Max Tokens</label>
+                                <input type="number" class="form-control" id="max-tokens" name="max_tokens" value="2000" min="100" max="8000">
+                                <div class="form-text">Maximum tokens for AI responses (100-8000)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="temperature" class="form-label">Temperature</label>
+                                <input type="range" class="form-range" id="temperature" name="temperature" min="0" max="1" step="0.1" value="0.1">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.0 (Focused)</small>
+                                    <small id="temperature-value">0.1</small>
+                                    <small>1.0 (Creative)</small>
+                                </div>
+                                <div class="form-text">Controls randomness in AI responses</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="max-file-size" class="form-label">Max File Size (MB)</label>
+                                <input type="number" class="form-control" id="max-file-size" name="max_file_size" value="1" min="0.1" max="10" step="0.1">
+                                <div class="form-text">Maximum file size for analysis</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Supported Languages</label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="python" id="lang-python" checked>
+                                            <label class="form-check-label" for="lang-python">Python</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="javascript" id="lang-javascript" checked>
+                                            <label class="form-check-label" for="lang-javascript">JavaScript</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="typescript" id="lang-typescript" checked>
+                                            <label class="form-check-label" for="lang-typescript">TypeScript</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="java" id="lang-java" checked>
+                                            <label class="form-check-label" for="lang-java">Java</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="cpp" id="lang-cpp" checked>
+                                            <label class="form-check-label" for="lang-cpp">C++</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="c" id="lang-c" checked>
+                                            <label class="form-check-label" for="lang-c">C</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="go" id="lang-go" checked>
+                                            <label class="form-check-label" for="lang-go">Go</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="rust" id="lang-rust" checked>
+                                            <label class="form-check-label" for="lang-rust">Rust</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <button type="button" class="btn btn-outline-info" onclick="testConnection()">
+                                        <i class="bi bi-wifi"></i> Test Connection
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="loadDefaultSettings()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reset to Defaults
+                                    </button>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-secondary" onclick="loadSettings()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reload
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-lg"></i> Save Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Connection Status -->
+                <div class="mt-3">
+                    <div class="alert alert-info" id="connection-status" style="display: none;">
+                        <i class="bi bi-info-circle"></i> <span id="connection-message">Ready to test connection</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Details Modal -->
+<div class="modal fade" id="analysisDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Analysis Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="analysis-details-body">
+                <!-- Analysis details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="exportAnalysis()">Export Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let analyses = [];
+    let qualityTrendChart = null;
+    let languageChart = null;
+
+    // Load analysis data
+    async function loadAnalyses() {
+        try {
+            const response = await fetch('/api/code/analysis');
+            const data = await response.json();
+            
+            if (data.error) {
+                showAlert('warning', `Could not load analyses: ${data.error}`);
+                return;
+            }
+            
+            analyses = data.analyses || [];
+            updateAnalysisTable();
+            updateAnalysisStats();
+            updateCharts();
+            
+        } catch (error) {
+            showAlert('danger', `Error loading analyses: ${error.message}`);
+        }
+    }
+
+    // Update analysis table
+    function updateAnalysisTable() {
+        const tbody = document.getElementById('analysis-history-tbody');
+        
+        if (analyses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No analyses found</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        analyses.forEach(analysis => {
+            const timestamp = new Date(analysis.timestamp).toLocaleString();
+            const qualityScore = analysis.quality_score || 0;
+            const issuesCount = analysis.issues ? analysis.issues.length : 0;
+            
+            html += `
+                <tr>
+                    <td><code>${analysis.session_id}</code></td>
+                    <td>${timestamp}</td>
+                    <td><span class="badge bg-secondary">${analysis.language || 'Unknown'}</span></td>
+                    <td>
+                        <div class="progress" style="width: 60px; height: 20px;">
+                            <div class="progress-bar ${getQualityColor(qualityScore)}" 
+                                 style="width: ${qualityScore * 100}%"
+                                 title="${(qualityScore * 100).toFixed(1)}%"></div>
+                        </div>
+                    </td>
+                    <td>${issuesCount}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewAnalysis('${analysis.id}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    // Update analysis statistics
+    function updateAnalysisStats() {
+        const totalAnalyses = analyses.length;
+        const avgQualityScore = analyses.length > 0 ? 
+            analyses.reduce((sum, a) => sum + (a.quality_score || 0), 0) / analyses.length : 0;
+        const improvementsCount = analyses.reduce((sum, a) => sum + (a.improvements ? a.improvements.length : 0), 0);
+        const activeSessions = new Set(analyses.map(a => a.session_id)).size;
+        
+        document.getElementById('total-analyses').textContent = totalAnalyses;
+        document.getElementById('avg-quality-score').textContent = (avgQualityScore * 100).toFixed(1) + '%';
+        document.getElementById('improvements-count').textContent = improvementsCount;
+        document.getElementById('active-sessions').textContent = activeSessions;
+    }
+
+    // AI Settings Functions
+    async function loadSettings() {
+        try {
+            const response = await fetch('/api/config/server');
+            const data = await response.json();
+
+            if (data.content) {
+                // Parse YAML content (simplified - in production use a proper YAML parser)
+                const config = parseConfigContent(data.content);
+                populateSettingsForm(config);
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            showConnectionStatus('Error loading settings', 'danger');
+        }
+    }
+
+    function parseConfigContent(content) {
+        // Simple YAML parsing for our specific structure
+        const lines = content.split('\n');
+        const config = {
+            code_improvement: {
+                ai_model: {
+                    provider: 'openai',
+                    model: 'gpt-4',
+                    api_key: '',
+                    api_base: '',
+                    max_tokens: 2000,
+                    temperature: 0.1
+                },
+                analysis: {
+                    max_file_size: 1048576,
+                    supported_languages: ['python', 'javascript', 'typescript', 'java', 'cpp', 'c', 'go', 'rust']
+                }
+            }
+        };
+
+        // Extract values from YAML content
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.includes('provider:')) {
+                const providerValue = trimmed.split('"')[1] || trimmed.split("'")[1] || 'openai';
+                config.code_improvement.ai_model.provider = ['openai', 'anthropic', 'gemini', 'custom'].includes(providerValue) ? providerValue : 'openai';
+            } else if (trimmed.includes('model:')) {
+                config.code_improvement.ai_model.model = trimmed.split('"')[1] || trimmed.split("'")[1] || 'gpt-4';
+            } else if (trimmed.includes('api_key:')) {
+                config.code_improvement.ai_model.api_key = trimmed.split('"')[1] || trimmed.split("'")[1] || '';
+            } else if (trimmed.includes('max_tokens:')) {
+                config.code_improvement.ai_model.max_tokens = parseInt(trimmed.split(':')[1]) || 2000;
+            } else if (trimmed.includes('temperature:')) {
+                config.code_improvement.ai_model.temperature = parseFloat(trimmed.split(':')[1]) || 0.1;
+            }
+        });
+
+        return config;
+    }
+
+    function populateSettingsForm(config) {
+        const aiModel = config.code_improvement?.ai_model || {};
+        const analysis = config.code_improvement?.analysis || {};
+
+        document.getElementById('ai-provider').value = aiModel.provider || 'openai';
+        document.getElementById('ai-model').value = aiModel.model || 'gpt-4';
+        document.getElementById('api-key').value = aiModel.api_key || '';
+        document.getElementById('api-base').value = aiModel.api_base || '';
+        document.getElementById('max-tokens').value = aiModel.max_tokens || 2000;
+        document.getElementById('temperature').value = aiModel.temperature || 0.1;
+        document.getElementById('temperature-value').textContent = aiModel.temperature || 0.1;
+        document.getElementById('max-file-size').value = (analysis.max_file_size || 1048576) / 1048576;
+
+        // Update model options based on provider
+        updateModelOptions();
+
+        // Show/hide custom API base
+        toggleCustomApiBase();
+    }
+
+    function updateModelOptions() {
+        const provider = document.getElementById('ai-provider').value;
+        const modelSelect = document.getElementById('ai-model');
+        const apiKey = document.getElementById('api-key').value;
+        const refreshBtn = document.getElementById('refresh-models-btn');
+
+        // Reset model select
+        modelSelect.innerHTML = '<option value="">Select a model...</option>';
+        modelSelect.disabled = true;
+        refreshBtn.disabled = true;
+
+        if (!apiKey || apiKey.length < 10) {
+            modelSelect.innerHTML = '<option value="">Enter API key first to load available models</option>';
+            return;
+        }
+
+        // Enable refresh button when we have an API key
+        refreshBtn.disabled = false;
+
+        // Auto-load models when provider or API key changes
+        refreshAvailableModels();
+    }
+
+    async function refreshAvailableModels() {
+        const provider = document.getElementById('ai-provider').value;
+        const apiKey = document.getElementById('api-key').value;
+        const apiBase = document.getElementById('api-base').value;
+        const modelSelect = document.getElementById('ai-model');
+        const refreshBtn = document.getElementById('refresh-models-btn');
+
+        if (!apiKey || apiKey.length < 10) {
+            showConnectionStatus('Please enter a valid API key first', 'warning');
+            return;
+        }
+
+        // Show loading state
+        modelSelect.innerHTML = '<option value="">Loading available models...</option>';
+        modelSelect.disabled = true;
+        refreshBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/code/models', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    provider: provider,
+                    api_key: apiKey,
+                    api_base: apiBase
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.models) {
+                // Populate with actual available models
+                modelSelect.innerHTML = '';
+                result.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = `${model.name} ${model.description ? '(' + model.description + ')' : ''}`;
+                    if (model.recommended) {
+                        option.textContent += ' ⭐';
+                    }
+                    modelSelect.appendChild(option);
+                });
+
+                // Select recommended model if available
+                const recommendedModel = result.models.find(m => m.recommended);
+                if (recommendedModel) {
+                    modelSelect.value = recommendedModel.id;
+                }
+
+                modelSelect.disabled = false;
+                showConnectionStatus(`✅ Loaded ${result.models.length} available models`, 'success');
+            } else {
+                // Fallback to static models if API call fails
+                loadStaticModels(provider);
+                showConnectionStatus(`⚠️ Using default models: ${result.error || 'API unavailable'}`, 'warning');
+            }
+        } catch (error) {
+            // Fallback to static models on error
+            loadStaticModels(provider);
+            showConnectionStatus(`⚠️ Using default models: ${error.message}`, 'warning');
+        } finally {
+            refreshBtn.disabled = false;
+        }
+    }
+
+    function loadStaticModels(provider) {
+        const modelSelect = document.getElementById('ai-model');
+
+        modelSelect.innerHTML = '';
+
+        if (provider === 'openai') {
+            const models = [
+                {id: 'gpt-4', name: 'GPT-4', recommended: true},
+                {id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo'},
+                {id: 'gpt-4-turbo', name: 'GPT-4 Turbo'}
+            ];
+            populateModelSelect(models);
+        } else if (provider === 'anthropic') {
+            const models = [
+                {id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', recommended: true},
+                {id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku'},
+                {id: 'claude-3-opus-20240229', name: 'Claude 3 Opus'}
+            ];
+            populateModelSelect(models);
+        } else if (provider === 'gemini') {
+            const models = [
+                {id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', recommended: true},
+                {id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash'},
+                {id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro'}
+            ];
+            populateModelSelect(models);
+        } else if (provider === 'custom') {
+            modelSelect.innerHTML = '<option value="custom-model">Custom Model</option>';
+        }
+
+        modelSelect.disabled = false;
+    }
+
+    function populateModelSelect(models) {
+        const modelSelect = document.getElementById('ai-model');
+
+        models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.id;
+            option.textContent = model.name + (model.recommended ? ' ⭐' : '');
+            modelSelect.appendChild(option);
+        });
+
+        // Select recommended model
+        const recommendedModel = models.find(m => m.recommended);
+        if (recommendedModel) {
+            modelSelect.value = recommendedModel.id;
+        }
+    }
+
+    function toggleCustomApiBase() {
+        const provider = document.getElementById('ai-provider').value;
+        const customApiBase = document.getElementById('custom-api-base');
+
+        if (provider === 'custom') {
+            customApiBase.style.display = 'block';
+        } else {
+            customApiBase.style.display = 'none';
+        }
+    }
+
+    function toggleApiKeyVisibility() {
+        const apiKeyInput = document.getElementById('api-key');
+        const toggleIcon = document.getElementById('api-key-toggle-icon');
+
+        if (apiKeyInput.type === 'password') {
+            apiKeyInput.type = 'text';
+            toggleIcon.className = 'bi bi-eye-slash';
+        } else {
+            apiKeyInput.type = 'password';
+            toggleIcon.className = 'bi bi-eye';
+        }
+    }
+
+    async function testConnection() {
+        const formData = new FormData(document.getElementById('ai-settings-form'));
+        const settings = Object.fromEntries(formData);
+
+        showConnectionStatus('Testing connection...', 'info');
+
+        try {
+            const response = await fetch('/api/code/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showConnectionStatus('✅ Connection successful!', 'success');
+            } else {
+                showConnectionStatus(`❌ Connection failed: ${result.error}`, 'danger');
+            }
+        } catch (error) {
+            showConnectionStatus(`❌ Connection error: ${error.message}`, 'danger');
+        }
+    }
+
+    function showConnectionStatus(message, type) {
+        const statusDiv = document.getElementById('connection-status');
+        const messageSpan = document.getElementById('connection-message');
+
+        statusDiv.className = `alert alert-${type}`;
+        messageSpan.textContent = message;
+        statusDiv.style.display = 'block';
+
+        // Auto-hide after 5 seconds for non-error messages
+        if (type !== 'danger') {
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    }
+
+    function loadDefaultSettings() {
+        document.getElementById('ai-provider').value = 'openai';
+        document.getElementById('ai-model').value = 'gpt-4';
+        document.getElementById('api-key').value = '';
+        document.getElementById('api-base').value = '';
+        document.getElementById('max-tokens').value = 2000;
+        document.getElementById('temperature').value = 0.1;
+        document.getElementById('temperature-value').textContent = '0.1';
+        document.getElementById('max-file-size').value = 1;
+
+        // Reset language checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+
+        updateModelOptions();
+        toggleCustomApiBase();
+
+        showConnectionStatus('Settings reset to defaults (OpenAI GPT-4)', 'info');
+    }
+
+    // Utility function for debouncing
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load settings when page loads
+        loadSettings();
+
+        // Provider change handler
+        document.getElementById('ai-provider').addEventListener('change', function() {
+            updateModelOptions();
+            toggleCustomApiBase();
+        });
+
+        // API key change handler - auto-load models when key is entered
+        document.getElementById('api-key').addEventListener('input', debounce(function() {
+            updateModelOptions();
+        }, 1000)); // Wait 1 second after user stops typing
+
+        // API base change handler
+        document.getElementById('api-base').addEventListener('input', debounce(function() {
+            if (document.getElementById('ai-provider').value === 'custom') {
+                updateModelOptions();
+            }
+        }, 1000));
+
+        // Temperature slider handler
+        document.getElementById('temperature').addEventListener('input', function() {
+            document.getElementById('temperature-value').textContent = this.value;
+        });
+
+        // Form submission handler
+        document.getElementById('ai-settings-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const settings = Object.fromEntries(formData);
+
+            // Get selected languages
+            const languages = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                languages.push(cb.value);
+            });
+            settings.supported_languages = languages;
+
+            // Convert file size to bytes
+            settings.max_file_size = parseInt(settings.max_file_size * 1048576);
+
+            try {
+                showConnectionStatus('Saving settings...', 'info');
+
+                const response = await fetch('/api/code/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showConnectionStatus('✅ Settings saved successfully!', 'success');
+                } else {
+                    showConnectionStatus(`❌ Failed to save settings: ${result.error}`, 'danger');
+                }
+            } catch (error) {
+                showConnectionStatus(`❌ Error saving settings: ${error.message}`, 'danger');
+            }
+        });
+    });
+
+    // Update charts
+    function updateCharts() {
+        updateQualityTrendChart();
+        updateLanguageChart();
+    }
+
+    // Update quality trend chart
+    function updateQualityTrendChart() {
+        const ctx = document.getElementById('qualityTrendChart').getContext('2d');
+        
+        if (qualityTrendChart) {
+            qualityTrendChart.destroy();
+        }
+        
+        const labels = analyses.slice(-10).map((_, i) => `Analysis ${i + 1}`);
+        const data = analyses.slice(-10).map(a => (a.quality_score || 0) * 100);
+        
+        qualityTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Quality Score (%)',
+                    data: data,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    // Update language chart
+    function updateLanguageChart() {
+        const ctx = document.getElementById('languageChart').getContext('2d');
+        
+        if (languageChart) {
+            languageChart.destroy();
+        }
+        
+        const languageCounts = {};
+        analyses.forEach(a => {
+            const lang = a.language || 'Unknown';
+            languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+        });
+        
+        const labels = Object.keys(languageCounts);
+        const data = Object.values(languageCounts);
+        const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1'];
+        
+        languageChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Get quality color based on score
+    function getQualityColor(score) {
+        if (score >= 0.8) return 'bg-success';
+        if (score >= 0.6) return 'bg-warning';
+        return 'bg-danger';
+    }
+
+    // View analysis details
+    function viewAnalysis(analysisId) {
+        const analysis = analyses.find(a => a.id === analysisId);
+        if (!analysis) {
+            showAlert('danger', 'Analysis not found');
+            return;
+        }
+        
+        const detailsBody = document.getElementById('analysis-details-body');
+        detailsBody.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Analysis Information</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Session ID:</strong></td><td><code>${analysis.session_id}</code></td></tr>
+                        <tr><td><strong>Language:</strong></td><td>${analysis.language || 'Unknown'}</td></tr>
+                        <tr><td><strong>Quality Score:</strong></td><td>${((analysis.quality_score || 0) * 100).toFixed(1)}%</td></tr>
+                        <tr><td><strong>Timestamp:</strong></td><td>${new Date(analysis.timestamp).toLocaleString()}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Issues Found</h6>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${analysis.issues && analysis.issues.length > 0 ? 
+                            analysis.issues.map(issue => `<div class="alert alert-warning alert-sm">${issue}</div>`).join('') :
+                            '<p class="text-muted">No issues found</p>'
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        new bootstrap.Modal(document.getElementById('analysisDetailsModal')).show();
+    }
+
+    // Run new analysis
+    async function runAnalysis() {
+        showAlert('info', 'Starting code analysis...');
+        
+        // Mock analysis - in real implementation, this would trigger actual analysis
+        setTimeout(() => {
+            showAlert('success', 'Code analysis completed successfully');
+            loadAnalyses(); // Refresh data
+        }, 2000);
+    }
+
+    // Refresh analysis data
+    function refreshAnalysis() {
+        loadAnalyses();
+        showAlert('info', 'Analysis data refreshed');
+    }
+
+    // Open AI Chat functionality
+    function openAIChat() {
+        // Create chat modal
+        const chatModal = document.createElement('div');
+        chatModal.className = 'modal fade';
+        chatModal.id = 'aiChatModal';
+        chatModal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-chat-dots"></i> AI Code Assistant Chat
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="chat-messages" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; margin-bottom: 15px; background-color: #f8f9fa;">
+                            <div class="text-muted text-center">
+                                <i class="bi bi-robot"></i> AI Assistant is ready to help with your code analysis questions.
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="chat-input" placeholder="Ask about code quality, best practices, or request analysis...">
+                            <button class="btn btn-primary" onclick="sendChatMessage()">
+                                <i class="bi bi-send"></i> Send
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <small class="text-muted">
+                            Using configured AI model: <span id="chat-model-info">Loading...</span>
+                        </small>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(chatModal);
+
+        // Show modal
+        const modal = new bootstrap.Modal(chatModal);
+        modal.show();
+
+        // Update model info
+        const provider = document.getElementById('ai-provider')?.value || 'openai';
+        const model = document.getElementById('ai-model')?.value || 'gpt-4';
+        document.getElementById('chat-model-info').textContent = `${provider} - ${model}`;
+
+        // Focus input
+        document.getElementById('chat-input').focus();
+
+        // Add enter key listener
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        // Clean up when modal is hidden
+        chatModal.addEventListener('hidden.bs.modal', function() {
+            document.body.removeChild(chatModal);
+        });
+    }
+
+    // Send chat message
+    function sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        const messagesContainer = document.getElementById('chat-messages');
+
+        // Add user message
+        const userMessage = document.createElement('div');
+        userMessage.className = 'mb-3';
+        userMessage.innerHTML = `
+            <div class="d-flex justify-content-end">
+                <div class="bg-primary text-white rounded p-2" style="max-width: 70%;">
+                    ${escapeHtml(message)}
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(userMessage);
+
+        // Clear input
+        input.value = '';
+
+        // Add typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'mb-3';
+        typingIndicator.id = 'typing-indicator';
+        typingIndicator.innerHTML = `
+            <div class="d-flex">
+                <div class="bg-light rounded p-2">
+                    <i class="bi bi-three-dots"></i> AI is thinking...
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(typingIndicator);
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Simulate AI response (replace with actual API call)
+        setTimeout(() => {
+            // Remove typing indicator
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+
+            // Add AI response
+            const aiMessage = document.createElement('div');
+            aiMessage.className = 'mb-3';
+            aiMessage.innerHTML = `
+                <div class="d-flex">
+                    <div class="bg-light rounded p-2" style="max-width: 70%;">
+                        <strong><i class="bi bi-robot"></i> AI Assistant:</strong><br>
+                        I'd be happy to help with your code analysis question. This is a demo response.
+                        In a full implementation, this would connect to your configured AI model
+                        (${document.getElementById('chat-model-info').textContent}) to provide
+                        detailed code analysis and recommendations.
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(aiMessage);
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 1500);
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Export analysis report
+    function exportAnalysis() {
+        showAlert('info', 'Exporting analysis report...');
+        // Mock export functionality
+        setTimeout(() => {
+            showAlert('success', 'Analysis report exported successfully');
+        }, 1000);
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAnalyses();
+    });
+</script>
+{% endblock %}

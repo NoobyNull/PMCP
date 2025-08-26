@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}{{ plugin.name }} Settings - PerfectMPC Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-gear"></i> {{ plugin.name }} Settings
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary" onclick="saveSettings()">
+                <i class="bi bi-check"></i> Save Settings
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="resetSettings()">
+                <i class="bi bi-arrow-clockwise"></i> Reset
+            </button>
+        </div>
+        <a href="/mcp-status" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left"></i> Back to Status
+        </a>
+    </div>
+</div>
+
+<!-- Plugin Information -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Plugin Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> {{ plugin.name }}</p>
+                        <p><strong>Version:</strong> {{ plugin.version or 'Latest' }}</p>
+                        <p><strong>Author:</strong> {{ plugin.author or 'Unknown' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if plugin.status == 'installed' else 'secondary' }}">
+                                {{ plugin.status }}
+                            </span>
+                        </p>
+                        <p><strong>Installed:</strong> {{ plugin.installed_at or 'Unknown' }}</p>
+                        <p><strong>Category:</strong> {{ plugin.category or 'General' }}</p>
+                    </div>
+                </div>
+                {% if plugin.description %}
+                <hr>
+                <p><strong>Description:</strong> {{ plugin.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-tools"></i> Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-success" onclick="startPlugin()">
+                        <i class="bi bi-play"></i> Start Plugin
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="restartPlugin()">
+                        <i class="bi bi-arrow-clockwise"></i> Restart Plugin
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="stopPlugin()">
+                        <i class="bi bi-stop"></i> Stop Plugin
+                    </button>
+                    <hr>
+                    <button class="btn btn-outline-danger" onclick="uninstallPlugin()">
+                        <i class="bi bi-trash"></i> Uninstall Plugin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Settings -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-sliders"></i> Configuration Settings
+                </h6>
+            </div>
+            <div class="card-body">
+                <form id="settings-form">
+                    <!-- Environment Variables -->
+                    <div class="mb-4">
+                        <h6>Environment Variables</h6>
+                        <div id="env-vars-container">
+                            <!-- Environment variables will be loaded here -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEnvVar()">
+                            <i class="bi bi-plus"></i> Add Environment Variable
+                        </button>
+                    </div>
+
+                    <!-- Command Line Arguments -->
+                    <div class="mb-4">
+                        <h6>Command Line Arguments</h6>
+                        <div class="mb-3">
+                            <label for="command-args" class="form-label">Arguments (one per line)</label>
+                            <textarea class="form-control" id="command-args" rows="4" 
+                                      placeholder="--port 8080&#10;--debug&#10;--config /path/to/config.json"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Server Configuration -->
+                    <div class="mb-4">
+                        <h6>Server Configuration</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="server-port" class="form-label">Port</label>
+                                    <input type="number" class="form-control" id="server-port" 
+                                           placeholder="8080" min="1024" max="65535">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="server-host" class="form-label">Host</label>
+                                    <input type="text" class="form-control" id="server-host" 
+                                           placeholder="localhost" value="localhost">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="auto-start">
+                                        <label class="form-check-label" for="auto-start">
+                                            Auto-start with system
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="debug-mode">
+                                        <label class="form-check-label" for="debug-mode">
+                                            Enable debug mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Configuration -->
+                    <div class="mb-4">
+                        <h6>Custom Configuration</h6>
+                        <div class="mb-3">
+                            <label for="custom-config" class="form-label">JSON Configuration</label>
+                            <textarea class="form-control" id="custom-config" rows="8" 
+                                      placeholder='{"key": "value", "nested": {"option": true}}'></textarea>
+                            <div class="form-text">Enter custom configuration in JSON format</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-journal-text"></i> Plugin Logs
+                    </h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <select class="form-select form-select-sm" id="log-level" onchange="filterLogs()">
+                        <option value="">All Levels</option>
+                        <option value="ERROR">Error</option>
+                        <option value="WARN">Warning</option>
+                        <option value="INFO">Info</option>
+                        <option value="DEBUG">Debug</option>
+                    </select>
+                </div>
+                <div id="logs-container" style="height: 300px; overflow-y: auto; background-color: #f8f9fa; padding: 1rem; border-radius: 0.375rem; font-family: monospace; font-size: 0.875rem;">
+                    <div class="text-muted">Loading logs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSettings = {};
+let envVarCounter = 0;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadSettings();
+    loadLogs();
+});
+
+// Load current settings
+async function loadSettings() {
+    try {
+        const response = await fetch(`/api/mcp/plugins/{{ plugin_id }}/settings`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentSettings = data.settings;
+            populateForm(currentSettings);
+        } else {
+            // Initialize with default settings
+            currentSettings = {
+                env_vars: {},
+                command_args: [],
+                server: {
+                    port: 8080,
+                    host: 'localhost',
+                    auto_start: false,
+                    debug_mode: false
+                },
+                custom_config: {}
+            };
+            populateForm(currentSettings);
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        showAlert('warning', 'Could not load existing settings. Using defaults.');
+    }
+}
+
+// Populate form with settings
+function populateForm(settings) {
+    // Environment variables
+    const envContainer = document.getElementById('env-vars-container');
+    envContainer.innerHTML = '';
+    
+    if (settings.env_vars) {
+        Object.entries(settings.env_vars).forEach(([key, value]) => {
+            addEnvVar(key, value);
+        });
+    }
+    
+    // Command arguments
+    if (settings.command_args) {
+        document.getElementById('command-args').value = settings.command_args.join('\n');
+    }
+    
+    // Server configuration
+    if (settings.server) {
+        document.getElementById('server-port').value = settings.server.port || '';
+        document.getElementById('server-host').value = settings.server.host || 'localhost';
+        document.getElementById('auto-start').checked = settings.server.auto_start || false;
+        document.getElementById('debug-mode').checked = settings.server.debug_mode || false;
+    }
+    
+    // Custom configuration
+    if (settings.custom_config) {
+        document.getElementById('custom-config').value = JSON.stringify(settings.custom_config, null, 2);
+    }
+}
+
+// Add environment variable row
+function addEnvVar(key = '', value = '') {
+    const container = document.getElementById('env-vars-container');
+    const id = envVarCounter++;
+    
+    const row = document.createElement('div');
+    row.className = 'row mb-2';
+    row.innerHTML = `
+        <div class="col-md-4">
+            <input type="text" class="form-control" placeholder="Variable name" 
+                   value="${key}" data-env-key="${id}">
+        </div>
+        <div class="col-md-6">
+            <input type="text" class="form-control" placeholder="Variable value" 
+                   value="${value}" data-env-value="${id}">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEnvVar(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(row);
+}
+
+// Remove environment variable row
+function removeEnvVar(button) {
+    button.closest('.row').remove();
+}
+
+// Save settings
+async function saveSettings() {
+    try {
+        const settings = collectFormData();
+        
+        const response = await fetch(`/api/mcp/plugins/{{ plugin_id }}/settings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('success', 'Settings saved successfully!');
+            currentSettings = settings;
+        } else {
+            showAlert('danger', `Error saving settings: ${result.error}`);
+        }
+    } catch (error) {
+        showAlert('danger', `Error saving settings: ${error.message}`);
+    }
+}
+
+// Collect form data
+function collectFormData() {
+    const settings = {
+        env_vars: {},
+        command_args: [],
+        server: {},
+        custom_config: {}
+    };
+    
+    // Environment variables
+    const envKeys = document.querySelectorAll('[data-env-key]');
+    const envValues = document.querySelectorAll('[data-env-value]');
+    
+    envKeys.forEach((keyInput, index) => {
+        const key = keyInput.value.trim();
+        const value = envValues[index].value.trim();
+        if (key) {
+            settings.env_vars[key] = value;
+        }
+    });
+    
+    // Command arguments
+    const argsText = document.getElementById('command-args').value.trim();
+    if (argsText) {
+        settings.command_args = argsText.split('\n').filter(arg => arg.trim());
+    }
+    
+    // Server configuration
+    settings.server = {
+        port: parseInt(document.getElementById('server-port').value) || 8080,
+        host: document.getElementById('server-host').value || 'localhost',
+        auto_start: document.getElementById('auto-start').checked,
+        debug_mode: document.getElementById('debug-mode').checked
+    };
+    
+    // Custom configuration
+    const customConfigText = document.getElementById('custom-config').value.trim();
+    if (customConfigText) {
+        try {
+            settings.custom_config = JSON.parse(customConfigText);
+        } catch (e) {
+            throw new Error('Invalid JSON in custom configuration');
+        }
+    }
+    
+    return settings;
+}
+
+// Reset settings
+function resetSettings() {
+    if (confirm('Are you sure you want to reset all settings to their current saved values?')) {
+        populateForm(currentSettings);
+        showAlert('info', 'Settings reset to last saved values');
+    }
+}
+
+// Plugin control functions
+async function startPlugin() {
+    await controlPlugin('start');
+}
+
+async function stopPlugin() {
+    await controlPlugin('stop');
+}
+
+async function restartPlugin() {
+    await controlPlugin('restart');
+}
+
+async function controlPlugin(action) {
+    try {
+        const response = await fetch(`/api/mcp/plugins/{{ plugin_id }}/${action}`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('success', `Plugin ${action} successful!`);
+        } else {
+            showAlert('danger', `Error ${action}ing plugin: ${result.error}`);
+        }
+    } catch (error) {
+        showAlert('danger', `Error ${action}ing plugin: ${error.message}`);
+    }
+}
+
+async function uninstallPlugin() {
+    if (confirm('Are you sure you want to uninstall this plugin? This action cannot be undone.')) {
+        try {
+            const response = await fetch(`/api/mcp/hub/uninstall`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ plugin_id: '{{ plugin_id }}' })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'Plugin uninstalled successfully!');
+                setTimeout(() => {
+                    window.location.href = '/mcp-status';
+                }, 2000);
+            } else {
+                showAlert('danger', `Error uninstalling plugin: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error uninstalling plugin: ${error.message}`);
+        }
+    }
+}
+
+// Load and display logs
+async function loadLogs() {
+    try {
+        const response = await fetch(`/api/mcp/plugins/{{ plugin_id }}/logs`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayLogs(data.logs);
+        } else {
+            document.getElementById('logs-container').innerHTML = 
+                '<div class="text-muted">No logs available</div>';
+        }
+    } catch (error) {
+        document.getElementById('logs-container').innerHTML = 
+            '<div class="text-danger">Error loading logs</div>';
+    }
+}
+
+function displayLogs(logs) {
+    const container = document.getElementById('logs-container');
+    
+    if (!logs || logs.length === 0) {
+        container.innerHTML = '<div class="text-muted">No logs available</div>';
+        return;
+    }
+    
+    const logHtml = logs.map(log => {
+        const level = log.level || 'INFO';
+        const timestamp = log.timestamp || new Date().toISOString();
+        const message = log.message || log;
+        
+        const levelClass = {
+            'ERROR': 'text-danger',
+            'WARN': 'text-warning',
+            'INFO': 'text-info',
+            'DEBUG': 'text-muted'
+        }[level] || 'text-dark';
+        
+        return `<div class="log-entry ${levelClass}">
+            <span class="text-muted">[${timestamp}]</span> 
+            <span class="fw-bold">[${level}]</span> 
+            ${message}
+        </div>`;
+    }).join('');
+    
+    container.innerHTML = logHtml;
+    container.scrollTop = container.scrollHeight;
+}
+
+function refreshLogs() {
+    loadLogs();
+}
+
+function filterLogs() {
+    // This would filter logs by level - simplified for now
+    loadLogs();
+}
+
+// Show alert function
+function showAlert(type, message) {
+    const alertContainer = document.getElementById('alert-container');
+    const alertId = 'alert-' + Date.now();
+    
+    alertContainer.innerHTML = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById(alertId);
+        if (alert) {
+            bootstrap.Alert.getInstance(alert)?.close();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

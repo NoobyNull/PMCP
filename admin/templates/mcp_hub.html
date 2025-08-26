@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+
+{% block title %}Add MCP Plugins - PerfectMPC Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .plugin-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border: 1px solid #e3e6f0;
+        border-radius: 0.5rem;
+    }
+    .plugin-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    .plugin-status {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    .status-available {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-installed {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    .status-installing {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .plugin-category {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.2rem;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .search-box {
+        border-radius: 2rem;
+        border: 2px solid #e3e6f0;
+        padding: 0.75rem 1.5rem;
+    }
+    .search-box:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .filter-btn {
+        border-radius: 1.5rem;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        border: 1px solid #e3e6f0;
+        background: white;
+        color: #6c757d;
+        transition: all 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    /* Dark mode fixes for MCP Hub */
+    [data-theme="dark"] .plugin-card {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .plugin-card h5,
+    [data-theme="dark"] .plugin-card .card-title,
+    [data-theme="dark"] .plugin-card .card-text,
+    [data-theme="dark"] .plugin-card p,
+    [data-theme="dark"] .plugin-card small,
+    [data-theme="dark"] .plugin-card .text-muted {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .status-available {
+        background-color: #1e4620 !important;
+        color: #4caf50 !important;
+        border: 1px solid #2e7d32;
+    }
+
+    [data-theme="dark"] .status-installed {
+        background-color: #1a237e !important;
+        color: #3f51b5 !important;
+        border: 1px solid #303f9f;
+    }
+
+    [data-theme="dark"] .status-installing {
+        background-color: #3e2723 !important;
+        color: #ff9800 !important;
+        border: 1px solid #5d4037;
+    }
+
+    [data-theme="dark"] .plugin-category {
+        background-color: var(--bg-secondary) !important;
+        color: #ffffff !important;
+        border: 1px solid var(--border-color);
+    }
+
+    [data-theme="dark"] .search-box {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .search-box:focus {
+        border-color: #667eea;
+        background-color: var(--bg-secondary);
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .filter-btn {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .filter-btn:hover,
+    [data-theme="dark"] .filter-btn.active {
+        background-color: #667eea;
+        color: #ffffff;
+        border-color: #667eea;
+    }
+
+    /* Dark mode modal fixes */
+    [data-theme="dark"] .modal-content {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .modal-header,
+    [data-theme="dark"] .modal-body,
+    [data-theme="dark"] .modal-footer {
+        border-color: var(--border-color);
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .modal-title,
+    [data-theme="dark"] .modal-body h4,
+    [data-theme="dark"] .modal-body p,
+    [data-theme="dark"] .modal-body strong,
+    [data-theme="dark"] .modal-body div {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .alert-info {
+        background-color: #1a237e;
+        border-color: #303f9f;
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .bg-light {
+        background-color: var(--bg-secondary) !important;
+    }
+
+    /* Source link styling */
+    .github-link, .source-link {
+        color: #6c757d;
+        transition: color 0.2s ease;
+    }
+
+    .github-link:hover, .source-link:hover {
+        color: #333;
+    }
+
+    [data-theme="dark"] .github-link,
+    [data-theme="dark"] .source-link {
+        color: #adb5bd;
+    }
+
+    [data-theme="dark"] .github-link:hover,
+    [data-theme="dark"] .source-link:hover {
+        color: #ffffff;
+    }
+
+    /* Source attribution styling */
+    .source-attribution {
+        border-left: 3px solid #667eea;
+        padding-left: 0.75rem;
+        margin-top: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+    }
+
+    [data-theme="dark"] .source-attribution {
+        background-color: var(--bg-secondary);
+        border-color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-plus-circle"></i> Add MCP Plugins
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-primary" onclick="refreshPlugins()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Search and Filter Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group">
+            <input type="text" class="form-control search-box" id="plugin-search" 
+                   placeholder="Search plugins by name, description, or author..." 
+                   onkeyup="filterPlugins()">
+            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" id="sort-select" onchange="sortPlugins()">
+            <option value="name">Sort by Name</option>
+            <option value="downloads">Sort by Downloads</option>
+            <option value="updated">Sort by Last Updated</option>
+            <option value="rating">Sort by Rating</option>
+        </select>
+    </div>
+</div>
+
+<!-- Category Filters -->
+<div class="mb-4">
+    <div class="d-flex flex-wrap">
+        <button class="filter-btn active" data-category="all" onclick="filterByCategory('all')">All</button>
+        <button class="filter-btn" data-category="ai" onclick="filterByCategory('ai')">AI & ML</button>
+        <button class="filter-btn" data-category="development" onclick="filterByCategory('development')">Development</button>
+        <button class="filter-btn" data-category="productivity" onclick="filterByCategory('productivity')">Productivity</button>
+        <button class="filter-btn" data-category="data" onclick="filterByCategory('data')">Data & Analytics</button>
+        <button class="filter-btn" data-category="automation" onclick="filterByCategory('automation')">Automation</button>
+        <button class="filter-btn" data-category="integration" onclick="filterByCategory('integration')">Integration</button>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div id="loading-state" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading plugins...</span>
+    </div>
+    <p class="mt-3 text-muted">Discovering available MCP plugins...</p>
+</div>
+
+<!-- Plugins Grid -->
+<div id="plugins-container" class="row" style="display: none;">
+    <!-- Plugins will be dynamically loaded here -->
+</div>
+
+<!-- No Results State -->
+<div id="no-results" class="text-center py-5" style="display: none;">
+    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+    <h4 class="mt-3 text-muted">No plugins found</h4>
+    <p class="text-muted">Try adjusting your search criteria or browse different categories.</p>
+</div>
+
+<!-- Attribution Footer -->
+<div class="mt-5 pt-4 border-top">
+    <div class="row">
+        <div class="col-md-8">
+            <h6><i class="bi bi-info-circle"></i> About MCP Plugins</h6>
+            <p class="small text-muted mb-2">
+                The plugins listed here are part of the <strong>Model Context Protocol (MCP)</strong> ecosystem,
+                an open standard for connecting AI assistants to external data sources and tools.
+            </p>
+            <p class="small text-muted mb-0">
+                <i class="bi bi-github"></i>
+                <a href="https://github.com/modelcontextprotocol" target="_blank" class="text-decoration-none">
+                    Model Context Protocol on GitHub
+                </a> |
+                <a href="https://modelcontextprotocol.io" target="_blank" class="text-decoration-none">
+                    Official Documentation
+                </a>
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="small text-muted">
+                <i class="bi bi-shield-check"></i> All plugins are sourced from verified repositories<br>
+                <i class="bi bi-code-square"></i> Open source and community maintained
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plugin Installation Modal -->
+<div class="modal fade" id="installModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Install MCP Plugin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="install-plugin-details">
+                    <!-- Plugin details will be loaded here -->
+                </div>
+                <div id="install-progress" style="display: none;">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center">
+                        <p id="install-status">Preparing installation...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-install" onclick="confirmInstall()">
+                    <i class="bi bi-download"></i> Install Plugin
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allPlugins = [];
+let filteredPlugins = [];
+let currentCategory = 'all';
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadPlugins();
+});
+
+// Load plugins from MCP hub
+async function loadPlugins() {
+    try {
+        showLoading(true);
+        
+        // Fetch plugins from MCP hub API
+        const response = await fetch('/api/mcp/hub/plugins');
+        const data = await response.json();
+        
+        if (data.success) {
+            allPlugins = data.plugins;
+            filteredPlugins = [...allPlugins];
+            displayPlugins();
+            showLoading(false);
+        } else {
+            throw new Error(data.error || 'Failed to load plugins');
+        }
+    } catch (error) {
+        console.error('Error loading plugins:', error);
+        showAlert('danger', `Error loading plugins: ${error.message}`);
+        showLoading(false);
+    }
+}
+
+// Display plugins in grid
+function displayPlugins() {
+    const container = document.getElementById('plugins-container');
+    const noResults = document.getElementById('no-results');
+    
+    if (filteredPlugins.length === 0) {
+        container.style.display = 'none';
+        noResults.style.display = 'block';
+        return;
+    }
+    
+    container.style.display = 'flex';
+    noResults.style.display = 'none';
+    
+    container.innerHTML = filteredPlugins.map(plugin => `
+        <div class="col-md-6 col-lg-4 mb-4 plugin-item" data-category="${plugin.category}">
+            <div class="card plugin-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-1">${plugin.name}</h5>
+                        <span class="plugin-status status-${plugin.status}">${plugin.status}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="plugin-category">${plugin.category}</span>
+                        <small class="text-muted ms-2">by ${plugin.author}</small>
+                    </div>
+                    <p class="card-text text-muted small">${plugin.description}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="small text-muted">
+                            <i class="bi bi-download"></i> ${plugin.downloads || 0}
+                            <i class="bi bi-star-fill ms-2"></i> ${plugin.rating || 'N/A'}
+                            ${plugin.github_url ? `
+                                <a href="${plugin.github_url}" target="_blank" class="source-link text-decoration-none ms-2"
+                                   title="${plugin.github_url.includes('github.com') ? 'View source on GitHub' : 'View source'}">
+                                    <i class="bi bi-${plugin.github_url.includes('github.com') ? 'github' : 'link-45deg'}"></i>
+                                </a>
+                            ` : ''}
+                        </div>
+                        <div>
+                            ${plugin.status === 'installed' ?
+                                `<button class="btn btn-sm btn-outline-danger" onclick="uninstallPlugin('${plugin.id}')">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>` :
+                                `<button class="btn btn-sm btn-primary" onclick="showInstallModal('${plugin.id}')">
+                                    <i class="bi bi-download"></i> Install
+                                </button>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Show/hide loading state
+function showLoading(show) {
+    document.getElementById('loading-state').style.display = show ? 'block' : 'none';
+    document.getElementById('plugins-container').style.display = show ? 'none' : 'flex';
+}
+
+// Filter plugins by search term
+function filterPlugins() {
+    const searchTerm = document.getElementById('plugin-search').value.toLowerCase();
+    
+    filteredPlugins = allPlugins.filter(plugin => {
+        const matchesSearch = !searchTerm || 
+            plugin.name.toLowerCase().includes(searchTerm) ||
+            plugin.description.toLowerCase().includes(searchTerm) ||
+            plugin.author.toLowerCase().includes(searchTerm);
+        
+        const matchesCategory = currentCategory === 'all' || plugin.category === currentCategory;
+        
+        return matchesSearch && matchesCategory;
+    });
+    
+    displayPlugins();
+}
+
+// Filter by category
+function filterByCategory(category) {
+    currentCategory = category;
+    
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-category="${category}"]`).classList.add('active');
+    
+    filterPlugins();
+}
+
+// Clear search
+function clearSearch() {
+    document.getElementById('plugin-search').value = '';
+    filterPlugins();
+}
+
+// Sort plugins
+function sortPlugins() {
+    const sortBy = document.getElementById('sort-select').value;
+    
+    filteredPlugins.sort((a, b) => {
+        switch (sortBy) {
+            case 'name':
+                return a.name.localeCompare(b.name);
+            case 'downloads':
+                return (b.downloads || 0) - (a.downloads || 0);
+            case 'updated':
+                return new Date(b.updated || 0) - new Date(a.updated || 0);
+            case 'rating':
+                return (b.rating || 0) - (a.rating || 0);
+            default:
+                return 0;
+        }
+    });
+    
+    displayPlugins();
+}
+
+// Show install modal
+function showInstallModal(pluginId) {
+    const plugin = allPlugins.find(p => p.id === pluginId);
+    if (!plugin) return;
+    
+    document.getElementById('install-plugin-details').innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h4>${plugin.name}</h4>
+                <p class="text-muted">by ${plugin.author}</p>
+                <p>${plugin.description}</p>
+                <div class="mb-3">
+                    <strong>Category:</strong> ${plugin.category}<br>
+                    <strong>Version:</strong> ${plugin.version || 'Latest'}<br>
+                    <strong>Downloads:</strong> ${plugin.downloads || 0}<br>
+                    <strong>Rating:</strong> ${plugin.rating || 'N/A'}/5<br>
+                    ${plugin.github_url ? `<strong>Source:</strong> <a href="${plugin.github_url}" target="_blank" class="text-decoration-none">
+                        <i class="bi bi-${plugin.github_url.includes('github.com') ? 'github' : 'link-45deg'}"></i>
+                        ${plugin.github_url.includes('github.com') ? 'View on GitHub' : 'View Source'}
+                    </a><br>` : ''}
+                    ${plugin.clone_url ? `<strong>Repository:</strong> <code class="small">${plugin.clone_url}</code><br>` : ''}
+                </div>
+                ${plugin.requirements ? `
+                    <div class="alert alert-info">
+                        <strong>Requirements:</strong> ${plugin.requirements}
+                    </div>
+                ` : ''}
+                ${plugin.github_url || plugin.clone_url ? `
+                    <div class="source-attribution">
+                        <h6 class="mb-2"><i class="bi bi-info-circle"></i> Source Attribution</h6>
+                        <p class="small mb-2">This plugin is developed and maintained by <strong>${plugin.author}</strong>.</p>
+                        ${plugin.github_url ? `
+                            <p class="small mb-1">
+                                <i class="bi bi-github"></i>
+                                <a href="${plugin.github_url}" target="_blank" class="text-decoration-none">
+                                    View source code and documentation
+                                </a>
+                            </p>
+                        ` : ''}
+                        ${plugin.clone_url ? `
+                            <p class="small mb-0">
+                                <i class="bi bi-terminal"></i>
+                                Clone: <code class="small">${plugin.clone_url}</code>
+                            </p>
+                        ` : ''}
+                    </div>
+                ` : ''}
+            </div>
+            <div class="col-md-4">
+                ${plugin.screenshot ? `
+                    <img src="${plugin.screenshot}" class="img-fluid rounded" alt="${plugin.name} screenshot">
+                ` : `
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('confirm-install').setAttribute('data-plugin-id', pluginId);
+    new bootstrap.Modal(document.getElementById('installModal')).show();
+}
+
+// Confirm installation
+async function confirmInstall() {
+    const pluginId = document.getElementById('confirm-install').getAttribute('data-plugin-id');
+    const plugin = allPlugins.find(p => p.id === pluginId);
+
+    if (!plugin) return;
+
+    try {
+        // Show progress
+        document.getElementById('install-plugin-details').style.display = 'none';
+        document.getElementById('install-progress').style.display = 'block';
+        document.getElementById('confirm-install').disabled = true;
+
+        // Start real-time installation with WebSocket updates
+        await installPluginWithRealTimeUpdates(pluginId, plugin);
+
+        // Update plugin status
+        plugin.status = 'installed';
+        displayPlugins();
+
+        // Close modal
+        bootstrap.Modal.getInstance(document.getElementById('installModal')).hide();
+        showAlert('success', `Plugin "${plugin.name}" installed successfully!`);
+
+    } catch (error) {
+        console.error('Installation error:', error);
+        showAlert('danger', `Installation failed: ${error.message}`);
+    } finally {
+        // Reset modal
+        document.getElementById('install-plugin-details').style.display = 'block';
+        document.getElementById('install-progress').style.display = 'none';
+        document.getElementById('confirm-install').disabled = false;
+    }
+}
+
+// Install plugin with real-time progress updates
+async function installPluginWithRealTimeUpdates(pluginId, plugin) {
+    const progressBar = document.querySelector('.progress-bar');
+    const statusText = document.getElementById('install-status');
+
+    // Create WebSocket connection for real-time updates
+    const ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+    return new Promise((resolve, reject) => {
+        ws.onopen = () => {
+            console.log('WebSocket connected for installation updates');
+
+            // Start installation
+            fetch('/api/mcp/hub/install', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    plugin_id: pluginId,
+                    real_time: true
+                })
+            }).then(response => response.json())
+              .then(result => {
+                  if (!result.success) {
+                      reject(new Error(result.error || 'Installation failed'));
+                  }
+              })
+              .catch(reject);
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'plugin_install_progress') {
+                    progressBar.style.width = data.progress + '%';
+                    statusText.textContent = data.message;
+
+                    if (data.progress >= 100) {
+                        setTimeout(() => {
+                            ws.close();
+                            resolve();
+                        }, 1000);
+                    }
+                } else if (data.type === 'plugin_install_error') {
+                    ws.close();
+                    reject(new Error(data.message));
+                }
+            } catch (e) {
+                console.error('Error parsing WebSocket message:', e);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            reject(new Error('WebSocket connection failed'));
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+
+        // Fallback timeout
+        setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+                reject(new Error('Installation timeout'));
+            }
+        }, 30000);
+    });
+}
+
+// Uninstall plugin
+async function uninstallPlugin(pluginId) {
+    const plugin = allPlugins.find(p => p.id === pluginId);
+    if (!plugin) return;
+    
+    if (!confirm(`Are you sure you want to uninstall "${plugin.name}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/mcp/hub/uninstall', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plugin_id: pluginId })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            plugin.status = 'available';
+            displayPlugins();
+            showAlert('success', `Plugin "${plugin.name}" uninstalled successfully!`);
+        } else {
+            throw new Error(result.error || 'Uninstallation failed');
+        }
+    } catch (error) {
+        console.error('Uninstallation error:', error);
+        showAlert('danger', `Uninstallation failed: ${error.message}`);
+    }
+}
+
+// Refresh plugins
+function refreshPlugins() {
+    loadPlugins();
+}
+
+// Show alert
+function showAlert(type, message) {
+    const alertContainer = document.getElementById('alert-container');
+    const alertId = 'alert-' + Date.now();
+    
+    alertContainer.innerHTML = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById(alertId);
+        if (alert) {
+            bootstrap.Alert.getInstance(alert)?.close();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

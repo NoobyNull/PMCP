@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - PerfectMPC Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-journal-text"></i> Server Logs
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-primary" onclick="refreshLogs()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="clearLogFilter()">
+                <i class="bi bi-x-circle"></i> Clear Filter
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="downloadLogs()">
+                <i class="bi bi-download"></i> Download
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Log Controls -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-funnel"></i> Log Filters & Controls
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="log-lines" class="form-label">Lines to Show</label>
+                <select class="form-select" id="log-lines" onchange="refreshLogs()">
+                    <option value="50">Last 50 lines</option>
+                    <option value="100" selected>Last 100 lines</option>
+                    <option value="200">Last 200 lines</option>
+                    <option value="500">Last 500 lines</option>
+                    <option value="1000">Last 1000 lines</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="log-level" class="form-label">Log Level</label>
+                <select class="form-select" id="log-level" onchange="refreshLogs()">
+                    <option value="">All Levels</option>
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="log-search" class="form-label">Search</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="log-search" placeholder="Search in logs...">
+                    <button class="btn btn-outline-secondary" onclick="searchLogs()">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="auto-refresh" checked>
+                    <label class="form-check-label" for="auto-refresh">
+                        Auto-refresh
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Total Lines
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-lines">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-text fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Errors
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="error-count">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Warnings
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="warning-count">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Last Updated
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800" id="last-updated">
+                            Never
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Viewer -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <div class="row align-items-center">
+            <div class="col">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-terminal"></i> Log Output
+                </h6>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="word-wrap" checked>
+                    <label class="form-check-label" for="word-wrap">Word Wrap</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="log-container p-3" id="log-container" style="height: 500px; overflow-y: auto;">
+            <div class="text-center text-muted">
+                <i class="bi bi-hourglass-split"></i> Loading logs...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Entry Details Modal -->
+<div class="modal fade" id="logEntryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Log Entry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="log-entry-details">
+                <!-- Log entry details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let logs = [];
+    let autoRefreshInterval = null;
+
+    // Load logs
+    async function loadLogs() {
+        const lines = document.getElementById('log-lines').value;
+        const level = document.getElementById('log-level').value;
+        const category = document.getElementById('log-category').value;
+        const search = document.getElementById('log-search').value;
+
+        try {
+            const params = new URLSearchParams({
+                lines: lines,
+                level: level || 'all',
+                category: category || 'all',
+                search: search || ''
+            });
+
+            const response = await fetch(`/api/logs?${params}`);
+            const data = await response.json();
+
+            if (data.error) {
+                showAlert('warning', `Error loading logs: ${data.error}`);
+                logs = [];
+            } else {
+                logs = data.logs || [];
+            }
+
+            displayLogs();
+            updateLogStats();
+
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            showAlert('danger', `Error loading logs: ${error.message}`);
+            logs = [];
+            displayLogs();
+            updateLogStats();
+        }
+    }
+
+    // Display logs in the container
+    function displayLogs() {
+        const container = document.getElementById('log-container');
+        const wordWrap = document.getElementById('word-wrap').checked;
+
+        if (logs.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No logs found</div>';
+            return;
+        }
+
+        let html = '';
+        logs.forEach((logEntry, index) => {
+            // Handle both old string format and new object format
+            const isObject = typeof logEntry === 'object';
+            const level = isObject ? logEntry.level : 'INFO';
+            const message = isObject ? logEntry.message : logEntry;
+            const timestamp = isObject ? logEntry.timestamp : '';
+            const category = isObject ? logEntry.category : 'general';
+            const source = isObject ? logEntry.source : 'unknown';
+
+            // Apply styling based on log level
+            let logClass = 'text-light';
+            let badgeClass = 'bg-secondary';
+
+            switch (level.toUpperCase()) {
+                case 'ERROR':
+                case 'CRITICAL':
+                    logClass = 'text-danger';
+                    badgeClass = 'bg-danger';
+                    break;
+                case 'WARNING':
+                    logClass = 'text-warning';
+                    badgeClass = 'bg-warning';
+                    break;
+                case 'INFO':
+                    logClass = 'text-info';
+                    badgeClass = 'bg-info';
+                    break;
+                case 'DEBUG':
+                    logClass = 'text-muted';
+                    badgeClass = 'bg-secondary';
+                    break;
+            }
+
+            const timestampStr = timestamp ? `<small class="text-muted">[${timestamp}]</small> ` : '';
+            const categoryBadge = isObject ? `<span class="badge ${badgeClass} me-1">${level}</span><span class="badge bg-secondary me-1">${category}</span>` : '';
+
+            html += `
+                <div class="${logClass} mb-1" style="font-family: monospace; font-size: 0.85em; ${wordWrap ? '' : 'white-space: nowrap;'}" onclick="showLogDetails(${index})">
+                    ${timestampStr}${categoryBadge}${escapeHtml(message)}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Auto-scroll to bottom
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Update log statistics
+    function updateLogStats() {
+        const totalLines = logs.length;
+        const errorCount = logs.filter(line => line.includes('ERROR')).length;
+        const warningCount = logs.filter(line => line.includes('WARNING')).length;
+        
+        document.getElementById('total-lines').textContent = totalLines;
+        document.getElementById('error-count').textContent = errorCount;
+        document.getElementById('warning-count').textContent = warningCount;
+        document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+    }
+
+    // Search logs
+    function searchLogs() {
+        const searchTerm = document.getElementById('log-search').value.toLowerCase();
+        
+        if (!searchTerm) {
+            displayLogs();
+            return;
+        }
+        
+        const filteredLogs = logs.filter(line => 
+            line.toLowerCase().includes(searchTerm)
+        );
+        
+        const container = document.getElementById('log-container');
+        const wordWrap = document.getElementById('word-wrap').checked;
+        
+        if (filteredLogs.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No matching log entries found</div>';
+            return;
+        }
+        
+        let html = '';
+        filteredLogs.forEach((line, index) => {
+            if (!line.trim()) return;
+            
+            let logClass = 'text-light';
+            if (line.includes('ERROR')) logClass = 'text-danger';
+            else if (line.includes('WARNING')) logClass = 'text-warning';
+            else if (line.includes('INFO')) logClass = 'text-info';
+            else if (line.includes('DEBUG')) logClass = 'text-muted';
+            
+            // Highlight search term
+            const highlightedLine = line.replace(
+                new RegExp(searchTerm, 'gi'),
+                `<mark>$&</mark>`
+            );
+            
+            html += `<div class="${logClass}" style="font-family: monospace; font-size: 0.85em; ${wordWrap ? '' : 'white-space: nowrap;'}">${highlightedLine}</div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    // Show log entry details
+    function showLogDetails(index) {
+        const logEntry = logs[index];
+        if (!logEntry) return;
+        
+        const detailsBody = document.getElementById('log-entry-details');
+        detailsBody.innerHTML = `
+            <div class="mb-3">
+                <label class="form-label"><strong>Log Entry:</strong></label>
+                <pre class="bg-light p-3 rounded" style="white-space: pre-wrap;">${escapeHtml(logEntry)}</pre>
+            </div>
+            <div class="mb-3">
+                <label class="form-label"><strong>Line Number:</strong></label>
+                <span>${index + 1}</span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label"><strong>Timestamp:</strong></label>
+                <span>${new Date().toLocaleString()}</span>
+            </div>
+        `;
+        
+        new bootstrap.Modal(document.getElementById('logEntryModal')).show();
+    }
+
+    // Refresh logs
+    function refreshLogs() {
+        loadLogs();
+    }
+
+    // Clear log filter
+    function clearLogFilter() {
+        document.getElementById('log-search').value = '';
+        document.getElementById('log-level').value = '';
+        loadLogs();
+    }
+
+    // Download logs
+    function downloadLogs() {
+        const logContent = logs.join('\n');
+        const blob = new Blob([logContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `perfectmpc-logs-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    // Setup auto-refresh
+    function setupAutoRefresh() {
+        const autoRefresh = document.getElementById('auto-refresh');
+        
+        if (autoRefresh.checked) {
+            autoRefreshInterval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
+        } else {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+    }
+
+    // Utility function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Event listeners
+    document.getElementById('auto-refresh').addEventListener('change', setupAutoRefresh);
+    document.getElementById('word-wrap').addEventListener('change', displayLogs);
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadLogs();
+        setupAutoRefresh();
+    });
+</script>
+{% endblock %}

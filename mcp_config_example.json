@@ -1,0 +1,12 @@
+{
+  "servers": [
+    {
+      "type": "http",
+      "url": "http://192.168.0.78:8000",
+      "headers": {
+        "Authorization": "Bearer mpc_goD4CC_dljMo7JJKjEje1QI0s7QP5ZUh_4lFboiQ0pg",
+        "Content-Type": "application/json"
+      }
+    }
+  ]
+}

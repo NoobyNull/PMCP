@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}Cline VSCode Assistant - PerfectMPC Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-terminal"></i> Cline VSCode Assistant
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-primary" onclick="copyConfiguration()">
+            <i class="bi bi-clipboard"></i> Copy Configuration
+        </button>
+    </div>
+</div>
+
+<!-- Introduction -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> About Cline VSCode Assistant
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    Cline is an AI coding assistant for VSCode that can read and write files, create projects, and execute terminal commands with your permission.
+                    Configure it to work with your PerfectMPC server for enhanced capabilities.
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Features:</h6>
+                        <ul>
+                            <li>File reading and writing</li>
+                            <li>Terminal command execution</li>
+                            <li>Project creation and management</li>
+                            <li>Integration with MCP servers</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Requirements:</h6>
+                        <ul>
+                            <li>VSCode with Cline extension</li>
+                            <li>API key for AI provider</li>
+                            <li>MCP server configuration</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Steps -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear"></i> Configuration Steps
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="configAccordion">
+                    <!-- Step 1: Install Extension -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="step1">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                <span class="badge bg-primary me-2">1</span>
+                                Install Cline Extension
+                            </button>
+                        </h2>
+                        <div id="collapse1" class="accordion-collapse collapse show" data-bs-parent="#configAccordion">
+                            <div class="accordion-body">
+                                <ol>
+                                    <li>Open VSCode</li>
+                                    <li>Go to Extensions (Ctrl+Shift+X)</li>
+                                    <li>Search for "Cline"</li>
+                                    <li>Install the Cline extension by Anthropic</li>
+                                    <li>Restart VSCode if prompted</li>
+                                </ol>
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    The Cline extension provides AI-powered coding assistance directly in VSCode.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Configure API -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="step2">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                <span class="badge bg-primary me-2">2</span>
+                                Configure AI Provider
+                            </button>
+                        </h2>
+                        <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                            <div class="accordion-body">
+                                <p>Configure your AI provider (Claude, OpenAI, etc.) in Cline settings:</p>
+                                <ol>
+                                    <li>Open Cline in VSCode</li>
+                                    <li>Click on the settings gear icon</li>
+                                    <li>Choose your AI provider</li>
+                                    <li>Enter your API key</li>
+                                    <li>Test the connection</li>
+                                </ol>
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    You'll need an API key from your chosen AI provider (Claude, OpenAI, etc.).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: MCP Configuration -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="step3">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                <span class="badge bg-primary me-2">3</span>
+                                Configure MCP Server
+                            </button>
+                        </h2>
+                        <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                            <div class="accordion-body">
+                                <p>Add PerfectMPC server to Cline's MCP configuration:</p>
+                                <div class="mb-3">
+                                    <label class="form-label">MCP Configuration JSON:</label>
+                                    <textarea class="form-control" id="mcp-config" rows="15" readonly>
+{
+  "mcpServers": {
+    "perfectmpc": {
+      "command": "node",
+      "args": ["-e", "
+        const http = require('http');
+        const url = require('url');
+        
+        const server = http.createServer((req, res) => {
+          const parsedUrl = url.parse(req.url, true);
+          
+          if (req.method === 'POST' && parsedUrl.pathname === '/message') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+              try {
+                const message = JSON.parse(body);
+                
+                // Forward to PerfectMPC server
+                const options = {
+                  hostname: '{{ server_info.host }}',
+                  port: {{ server_info.mpc_port }},
+                  path: '/api' + message.path,
+                  method: message.method || 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                };
+                
+                const proxyReq = http.request(options, (proxyRes) => {
+                  let data = '';
+                  proxyRes.on('data', chunk => data += chunk);
+                  proxyRes.on('end', () => {
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(data);
+                  });
+                });
+                
+                proxyReq.write(JSON.stringify(message.data || {}));
+                proxyReq.end();
+                
+              } catch (error) {
+                res.writeHead(500, {'Content-Type': 'application/json'});
+                res.end(JSON.stringify({error: error.message}));
+              }
+            });
+          } else {
+            res.writeHead(404);
+            res.end();
+          }
+        });
+        
+        server.listen(8001, () => {
+          console.log('PerfectMPC MCP Bridge running on port 8001');
+        });
+      "],
+      "env": {}
+    }
+  }
+}
+                                    </textarea>
+                                </div>
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle"></i>
+                                    This configuration creates a bridge between Cline and your PerfectMPC server.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Server Information -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-server"></i> Server Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Host:</strong></td>
+                        <td><code>{{ server_info.host }}</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>MCP Port:</strong></td>
+                        <td><code>{{ server_info.mpc_port }}</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Admin Port:</strong></td>
+                        <td><code>{{ server_info.admin_port }}</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bridge Port:</strong></td>
+                        <td><code>8001</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-tools"></i> Available Tools
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-memory"></i> Memory Management</li>
+                    <li><i class="bi bi-code-slash"></i> Code Analysis</li>
+                    <li><i class="bi bi-file-text"></i> Document Search</li>
+                    <li><i class="bi bi-layers"></i> Context 7</li>
+                    <li><i class="bi bi-browser-chrome"></i> Playwright</li>
+                    <li><i class="bi bi-cpu"></i> Sequential Thinking</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="copyConfiguration()">
+                        <i class="bi bi-clipboard"></i> Copy MCP Config
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="testConnection()">
+                        <i class="bi bi-wifi"></i> Test Connection
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="openDocumentation()">
+                        <i class="bi bi-book"></i> Documentation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Copy MCP configuration to clipboard
+function copyConfiguration() {
+    const config = document.getElementById('mcp-config');
+    config.select();
+    document.execCommand('copy');
+    
+    showAlert('success', 'MCP configuration copied to clipboard!');
+}
+
+// Test connection to PerfectMPC server
+async function testConnection() {
+    try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        if (data.mpc_server && data.mpc_server.running) {
+            showAlert('success', 'Connection to PerfectMPC server successful!');
+        } else {
+            showAlert('warning', 'PerfectMPC server is not running. Please start it first.');
+        }
+    } catch (error) {
+        showAlert('danger', `Connection failed: ${error.message}`);
+    }
+}
+
+// Open documentation
+function openDocumentation() {
+    window.open('https://github.com/clinebot/cline', '_blank');
+}
+
+// Show alert function
+function showAlert(type, message) {
+    const alertContainer = document.getElementById('alert-container');
+    const alertId = 'alert-' + Date.now();
+    
+    alertContainer.innerHTML = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById(alertId);
+        if (alert) {
+            bootstrap.Alert.getInstance(alert)?.close();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

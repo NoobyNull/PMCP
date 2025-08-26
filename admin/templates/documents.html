@@ -1,0 +1,1139 @@
+{% extends "base.html" %}
+
+{% block title %}Documents - PerfectMPC Admin{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-file-earmark-text"></i> Document Management
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                <i class="bi bi-cloud-upload"></i> Upload Document
+            </button>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addToRagModal">
+                <i class="bi bi-plus-circle"></i> Add to RAG
+            </button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-info" onclick="generateBookmarklet()">
+                <i class="bi bi-bookmark"></i> Get Bookmarklet
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Document Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Document Files
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-documents-count">
+                            0
+                        </div>
+                        <small class="text-muted">Uploaded content only</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-earmark-text fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Indexed Chunks
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-chunks-count">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-puzzle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Storage Used
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="storage-used">
+                            0 MB
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-hdd fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            File Types
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="file-types-count">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-earmark-code fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Search and Filter -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-search"></i> Document Search & Test
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="search-query" placeholder="Enter search query to test RAG functionality...">
+                    <button class="btn btn-primary" onclick="searchDocuments()">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="search-session">
+                    <option value="">All Sessions</option>
+                    <!-- Sessions will be populated dynamically -->
+                </select>
+            </div>
+        </div>
+        
+        <!-- Search Results -->
+        <div id="search-results" class="mt-3" style="display: none;">
+            <h6>Search Results:</h6>
+            <div id="search-results-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Background Jobs Status -->
+<div class="card shadow mb-4" id="jobs-card" style="display: none;">
+    <div class="card-header py-3">
+        <div class="row align-items-center">
+            <div class="col">
+                <h6 class="m-0 font-weight-bold text-warning">
+                    <i class="bi bi-clock-history"></i> Background Processing Jobs
+                </h6>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleJobsCard()">
+                    <i class="bi bi-chevron-up" id="jobs-toggle-icon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body" id="jobs-card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Message</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody id="jobs-table">
+                    <!-- Jobs will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Documents Table -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <div class="row align-items-center">
+            <div class="col">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-table"></i> Documents
+                </h6>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshDocuments()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSelectedDocuments()">
+                        <i class="bi bi-trash"></i> Delete Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Filter Controls -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="document-filter" placeholder="Filter documents...">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="type-filter">
+                    <option value="">All Types</option>
+                    <option value="text">Text</option>
+                    <option value="code">Code</option>
+                    <option value="document">Document</option>
+                    <option value="pdf">PDF</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="session-filter">
+                    <option value="">All Sessions</option>
+                    <!-- Sessions will be populated dynamically -->
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="select-all-docs">
+                    <label class="form-check-label" for="select-all-docs">Select All</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Table -->
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th width="30">
+                            <input type="checkbox" id="select-all-checkbox">
+                        </th>
+                        <th>Title</th>
+                        <th>Size on Disk</th>
+                        <th>Session</th>
+                        <th>Chunks</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="documents-tbody">
+                    <tr>
+                        <td colspan="7" class="text-center">Loading documents...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadDocumentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="upload-document-form" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="document-file" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="document-file" accept=".txt,.md,.pdf,.docx,.doc,.html,.py,.js,.ts,.java,.cpp,.c,.go,.rs">
+                        <div class="form-text">Supported formats: TXT, MD, PDF, DOCX, HTML, and code files</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="upload-session-id" class="form-label">Session ID</label>
+                        <input type="text" class="form-control" id="upload-session-id" placeholder="Enter session ID or leave empty for default">
+                    </div>
+                    <div class="mb-3">
+                        <label for="document-description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="document-description" rows="3" placeholder="Brief description of the document"></textarea>
+                    </div>
+                </form>
+                <div id="upload-progress" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted">Uploading and indexing document...</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="uploadDocument()">Upload & Index</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add to RAG Modal -->
+<div class="modal fade" id="addToRagModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Content to RAG</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="addToRagTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="url-tab" data-bs-toggle="tab" data-bs-target="#url-panel" type="button" role="tab">
+                            <i class="bi bi-link"></i> From URL
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-panel" type="button" role="tab">
+                            <i class="bi bi-file-text"></i> Text Content
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="github-tab" data-bs-toggle="tab" data-bs-target="#github-panel" type="button" role="tab">
+                            <i class="bi bi-github"></i> GitHub Repo
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-3" id="addToRagTabContent">
+                    <!-- URL Panel -->
+                    <div class="tab-pane fade show active" id="url-panel" role="tabpanel">
+                        <form id="url-form">
+                            <div class="mb-3">
+                                <label for="content-url" class="form-label">Website URL</label>
+                                <input type="url" class="form-control" id="content-url" placeholder="https://example.com/article" required>
+                                <div class="form-text">Enter the URL of a webpage, article, or documentation to add to RAG</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="url-session-id" class="form-label">Session ID</label>
+                                <input type="text" class="form-control" id="url-session-id" placeholder="Enter session ID or leave empty for default">
+                            </div>
+                            <div class="mb-3">
+                                <label for="url-title" class="form-label">Document Title (Optional)</label>
+                                <input type="text" class="form-control" id="url-title" placeholder="Will be auto-detected if empty">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="extract-links" checked>
+                                    <label class="form-check-label" for="extract-links">
+                                        Extract and follow internal links
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="include-images">
+                                    <label class="form-check-label" for="include-images">
+                                        Include image descriptions
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Text Panel -->
+                    <div class="tab-pane fade" id="text-panel" role="tabpanel">
+                        <form id="text-form">
+                            <div class="mb-3">
+                                <label for="text-content" class="form-label">Text Content</label>
+                                <textarea class="form-control" id="text-content" rows="10" placeholder="Paste your text content here..." required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="text-session-id" class="form-label">Session ID</label>
+                                <input type="text" class="form-control" id="text-session-id" placeholder="Enter session ID or leave empty for default">
+                            </div>
+                            <div class="mb-3">
+                                <label for="text-title" class="form-label">Document Title</label>
+                                <input type="text" class="form-control" id="text-title" placeholder="Enter a title for this content" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="content-type" class="form-label">Content Type</label>
+                                <select class="form-select" id="content-type">
+                                    <option value="text">Plain Text</option>
+                                    <option value="markdown">Markdown</option>
+                                    <option value="code">Code</option>
+                                    <option value="documentation">Documentation</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- GitHub Panel -->
+                    <div class="tab-pane fade" id="github-panel" role="tabpanel">
+                        <form id="github-form">
+                            <div class="mb-3">
+                                <label for="github-url" class="form-label">GitHub Repository URL</label>
+                                <input type="url" class="form-control" id="github-url" placeholder="https://github.com/user/repo" required>
+                                <div class="form-text">Enter the GitHub repository URL to clone and index</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="github-session-id" class="form-label">Session ID</label>
+                                <input type="text" class="form-control" id="github-session-id" placeholder="Enter session ID or leave empty for default">
+                            </div>
+                            <div class="mb-3">
+                                <label for="file-patterns" class="form-label">File Patterns (Optional)</label>
+                                <input type="text" class="form-control" id="file-patterns" placeholder="*.py,*.js,*.md" value="*.py,*.js,*.ts,*.md,*.txt,*.json">
+                                <div class="form-text">Comma-separated file patterns to include</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="include-readme" checked>
+                                    <label class="form-check-label" for="include-readme">
+                                        Include README and documentation files
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="exclude-tests">
+                                    <label class="form-check-label" for="exclude-tests">
+                                        Exclude test files
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="rag-progress" style="display: none;" class="mt-3">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted">Processing content and adding to RAG...</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="addToRag()">
+                    <i class="bi bi-plus-circle"></i> Add to RAG
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bookmarklet Modal -->
+<div class="modal fade" id="bookmarkletModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">PerfectMPC RAG Bookmarklet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> How to use:</h6>
+                    <ol>
+                        <li>Drag the bookmarklet below to your browser's bookmarks bar</li>
+                        <li>Navigate to any webpage you want to add to RAG</li>
+                        <li>Click the bookmarklet to instantly add the page content to PerfectMPC</li>
+                    </ol>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Bookmarklet:</strong></label>
+                    <div class="p-3 bg-light border rounded">
+                        <a href="#" id="bookmarklet-link" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add to PMPC RAG
+                        </a>
+                    </div>
+                    <div class="form-text">Drag this button to your bookmarks bar</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Bookmarklet Code:</strong></label>
+                    <textarea class="form-control" id="bookmarklet-code" rows="5" readonly></textarea>
+                    <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyBookmarklet()">
+                        <i class="bi bi-clipboard"></i> Copy Code
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <h6>Browser Extension Alternative:</h6>
+                    <p class="text-muted">For a better experience, consider creating a browser extension with these features:</p>
+                    <ul class="text-muted">
+                        <li>Right-click context menu integration</li>
+                        <li>Automatic session detection</li>
+                        <li>Progress notifications</li>
+                        <li>Batch processing of multiple pages</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadExtension()">
+                    <i class="bi bi-download"></i> Download Extension Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Details Modal -->
+<div class="modal fade" id="documentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Document Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="document-details-body">
+                <!-- Document details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" onclick="reindexDocument()">Re-index</button>
+                <button type="button" class="btn btn-danger" onclick="deleteCurrentDocument()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let documents = [];
+    let currentDocumentId = null;
+
+    // Load documents
+    async function loadDocuments() {
+        try {
+            const response = await fetch('/api/documents');
+            const data = await response.json();
+            
+            if (data.error) {
+                showAlert('danger', `Error loading documents: ${data.error}`);
+                return;
+            }
+            
+            documents = data.documents;
+            updateDocumentsTable();
+            updateDocumentStats();
+            
+        } catch (error) {
+            showAlert('danger', `Error loading documents: ${error.message}`);
+        }
+    }
+
+    // Update documents table
+    function updateDocumentsTable() {
+        const tbody = document.getElementById('documents-tbody');
+        
+        if (documents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No documents found</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        documents.forEach(doc => {
+            const createdDate = new Date(doc.created_at).toLocaleString();
+            const docType = doc.doc_type || 'unknown';
+            
+            html += `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="document-checkbox" value="${doc.doc_id}">
+                    </td>
+                    <td>
+                        <strong>${doc.title}</strong>
+                        <br><small class="text-muted">${doc.doc_id}</small>
+                        <br><span class="badge bg-secondary">${docType}</span>
+                    </td>
+                    <td>${formatFileSize(doc.metadata?.file_size || doc.size || 0)}</td>
+                    <td><code>${doc.session_id}</code></td>
+                    <td>${doc.chunk_count || 0}</td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewDocument('${doc.doc_id}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument('${doc.doc_id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    // Update document statistics
+    function updateDocumentStats() {
+        const totalDocs = documents.length;
+        const totalChunks = documents.reduce((sum, doc) => sum + (doc.chunk_count || 0), 0);
+        const fileTypes = new Set(documents.map(doc => doc.doc_type)).size;
+
+        // Calculate total storage size
+        const totalBytes = documents.reduce((sum, doc) => {
+            const size = doc.metadata?.file_size || doc.size || 0;
+            return sum + size;
+        }, 0);
+
+        const storageUsed = formatFileSize(totalBytes);
+
+        document.getElementById('total-documents-count').textContent = totalDocs;
+        document.getElementById('total-chunks-count').textContent = totalChunks;
+        document.getElementById('file-types-count').textContent = fileTypes;
+        document.getElementById('storage-used').textContent = storageUsed;
+    }
+
+    // Format file size in human readable format
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Upload document
+    async function uploadDocument() {
+        const fileInput = document.getElementById('document-file');
+        const sessionId = document.getElementById('upload-session-id').value.trim() || 'default';
+        const description = document.getElementById('document-description').value.trim();
+        
+        if (!fileInput.files[0]) {
+            showAlert('warning', 'Please select a file to upload');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('session_id', sessionId);
+        if (description) {
+            formData.append('description', description);
+        }
+        
+        // Show progress
+        document.getElementById('upload-progress').style.display = 'block';
+        
+        try {
+            const response = await fetch('/api/documents/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', `Document uploaded successfully: ${result.doc_id}`);
+                bootstrap.Modal.getInstance(document.getElementById('uploadDocumentModal')).hide();
+                document.getElementById('upload-document-form').reset();
+                loadDocuments(); // Refresh the list
+            } else {
+                showAlert('danger', `Error uploading document: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error uploading document: ${error.message}`);
+        } finally {
+            document.getElementById('upload-progress').style.display = 'none';
+        }
+    }
+
+    // Search documents
+    async function searchDocuments() {
+        const query = document.getElementById('search-query').value.trim();
+        const sessionId = document.getElementById('search-session').value;
+        
+        if (!query) {
+            showAlert('warning', 'Please enter a search query');
+            return;
+        }
+        
+        try {
+            const url = `/api/documents/search?query=${encodeURIComponent(query)}${sessionId ? `&session_id=${sessionId}` : ''}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            const resultsDiv = document.getElementById('search-results');
+            const contentDiv = document.getElementById('search-results-content');
+            
+            if (data.results && data.results.length > 0) {
+                let html = '<div class="list-group">';
+                data.results.forEach(result => {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${result.title}</h6>
+                                <small>Similarity: ${(result.similarity * 100).toFixed(1)}%</small>
+                            </div>
+                            <p class="mb-1">${result.content.substring(0, 200)}...</p>
+                            <small class="text-muted">Document ID: ${result.doc_id}</small>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                contentDiv.innerHTML = html;
+            } else {
+                contentDiv.innerHTML = '<p class="text-muted">No results found</p>';
+            }
+            
+            resultsDiv.style.display = 'block';
+            
+        } catch (error) {
+            showAlert('danger', `Error searching documents: ${error.message}`);
+        }
+    }
+
+    // View document details
+    function viewDocument(docId) {
+        currentDocumentId = docId;
+        const doc = documents.find(d => d.doc_id === docId);
+        
+        if (!doc) {
+            showAlert('danger', 'Document not found');
+            return;
+        }
+        
+        const detailsBody = document.getElementById('document-details-body');
+        detailsBody.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Document Information</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>ID:</strong></td><td><code>${doc.doc_id}</code></td></tr>
+                        <tr><td><strong>Title:</strong></td><td>${doc.title}</td></tr>
+                        <tr><td><strong>Type:</strong></td><td>${doc.doc_type}</td></tr>
+                        <tr><td><strong>Session:</strong></td><td><code>${doc.session_id}</code></td></tr>
+                        <tr><td><strong>Chunks:</strong></td><td>${doc.chunk_count || 0}</td></tr>
+                        <tr><td><strong>Created:</strong></td><td>${new Date(doc.created_at).toLocaleString()}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Metadata</h6>
+                    <pre class="bg-light p-2 rounded"><code>${JSON.stringify(doc.metadata || {}, null, 2)}</code></pre>
+                </div>
+            </div>
+        `;
+        
+        new bootstrap.Modal(document.getElementById('documentDetailsModal')).show();
+    }
+
+    // Delete document
+    async function deleteDocument(docId) {
+        if (!confirm(`Are you sure you want to delete this document?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/documents/${docId}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'Document deleted successfully');
+                loadDocuments(); // Refresh the list
+            } else {
+                showAlert('danger', `Error deleting document: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error deleting document: ${error.message}`);
+        }
+    }
+
+    // Delete current document (from modal)
+    function deleteCurrentDocument() {
+        if (currentDocumentId) {
+            bootstrap.Modal.getInstance(document.getElementById('documentDetailsModal')).hide();
+            deleteDocument(currentDocumentId);
+        }
+    }
+
+    // View document details
+    async function viewDocument(docId) {
+        try {
+            const response = await fetch(`/api/documents/${docId}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const doc = result.document;
+                currentDocumentId = docId;
+
+                // Format document details
+                const detailsHtml = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Document Information</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>ID:</strong></td><td><code>${doc.doc_id}</code></td></tr>
+                                <tr><td><strong>Title:</strong></td><td>${doc.title}</td></tr>
+                                <tr><td><strong>Session:</strong></td><td><code>${doc.session_id}</code></td></tr>
+                                <tr><td><strong>Type:</strong></td><td><span class="badge bg-secondary">${doc.doc_type}</span></td></tr>
+                                <tr><td><strong>Chunks:</strong></td><td>${doc.chunk_count}</td></tr>
+                                <tr><td><strong>Created:</strong></td><td>${new Date(doc.created_at).toLocaleString()}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Metadata</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Filename:</strong></td><td>${doc.metadata?.filename || 'N/A'}</td></tr>
+                                <tr><td><strong>Content Type:</strong></td><td>${doc.metadata?.content_type || 'N/A'}</td></tr>
+                                <tr><td><strong>File Size:</strong></td><td>${doc.metadata?.file_size ? (doc.metadata.file_size / 1024).toFixed(1) + ' KB' : 'N/A'}</td></tr>
+                                <tr><td><strong>Content Hash:</strong></td><td><code>${doc.content_hash?.substring(0, 16)}...</code></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Content Preview</h6>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                                <pre style="white-space: pre-wrap; margin: 0;">${doc.content_preview || 'No content available'}</pre>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('document-details-body').innerHTML = detailsHtml;
+                new bootstrap.Modal(document.getElementById('documentDetailsModal')).show();
+            } else {
+                showAlert('danger', `Error loading document: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error loading document: ${error.message}`);
+        }
+    }
+
+    // Reindex document
+    async function reindexDocument() {
+        if (!currentDocumentId) {
+            showAlert('warning', 'No document selected');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to reindex this document? This will regenerate all embeddings.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/documents/${currentDocumentId}/reindex`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert('success', 'Document reindexed successfully');
+                bootstrap.Modal.getInstance(document.getElementById('documentDetailsModal')).hide();
+                loadDocuments(); // Refresh the list
+            } else {
+                showAlert('danger', `Error reindexing document: ${result.error}`);
+            }
+        } catch (error) {
+            showAlert('danger', `Error reindexing document: ${error.message}`);
+        }
+    }
+
+    // Add content to RAG
+    async function addToRag() {
+        const activeTab = document.querySelector('#addToRagTabs .nav-link.active').id;
+
+        let data = {};
+        let endpoint = '/api/documents/add-to-rag';
+
+        try {
+            if (activeTab === 'url-tab') {
+                data = {
+                    type: 'url',
+                    url: document.getElementById('content-url').value,
+                    session_id: document.getElementById('url-session-id').value || 'default',
+                    title: document.getElementById('url-title').value,
+                    extract_links: document.getElementById('extract-links').checked,
+                    include_images: document.getElementById('include-images').checked
+                };
+            } else if (activeTab === 'text-tab') {
+                data = {
+                    type: 'text',
+                    content: document.getElementById('text-content').value,
+                    session_id: document.getElementById('text-session-id').value || 'default',
+                    title: document.getElementById('text-title').value,
+                    content_type: document.getElementById('content-type').value
+                };
+            } else if (activeTab === 'github-tab') {
+                data = {
+                    type: 'github',
+                    url: document.getElementById('github-url').value,
+                    session_id: document.getElementById('github-session-id').value || 'default',
+                    file_patterns: document.getElementById('file-patterns').value,
+                    include_readme: document.getElementById('include-readme').checked,
+                    exclude_tests: document.getElementById('exclude-tests').checked
+                };
+            }
+
+            // Show progress
+            document.getElementById('rag-progress').style.display = 'block';
+            updateProgress(0, 'Starting upload...');
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert('info', `Upload started! Job ID: ${result.job_id}. Processing in background...`);
+
+                // Start polling for job status
+                pollJobStatus(result.job_id);
+
+                // Close modal after a short delay
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('addToRagModal')).hide();
+                }, 2000);
+
+            } else {
+                showAlert('danger', `Error starting upload: ${result.error}`);
+                document.getElementById('rag-progress').style.display = 'none';
+            }
+        } catch (error) {
+            showAlert('danger', `Error starting upload: ${error.message}`);
+            document.getElementById('rag-progress').style.display = 'none';
+        }
+    }
+
+    // Poll job status
+    async function pollJobStatus(jobId) {
+        try {
+            const response = await fetch(`/api/documents/job-status/${jobId}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const job = result.job;
+                updateProgress(job.progress, job.message);
+
+                if (job.status === 'completed') {
+                    showAlert('success', `✅ Successfully added to RAG! ${job.title || 'Content'} has been indexed.`);
+                    document.getElementById('rag-progress').style.display = 'none';
+                    loadDocuments(); // Refresh the list
+                } else if (job.status === 'failed') {
+                    showAlert('danger', `❌ Failed to add to RAG: ${job.message}`);
+                    document.getElementById('rag-progress').style.display = 'none';
+                } else {
+                    // Continue polling
+                    setTimeout(() => pollJobStatus(jobId), 2000);
+                }
+            }
+        } catch (error) {
+            console.error('Error polling job status:', error);
+            // Continue polling anyway
+            setTimeout(() => pollJobStatus(jobId), 5000);
+        }
+    }
+
+    // Update progress bar
+    function updateProgress(progress, message) {
+        const progressBar = document.querySelector('#rag-progress .progress-bar');
+        const progressText = document.querySelector('#rag-progress small');
+
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+
+        if (progressText) {
+            progressText.textContent = message;
+        }
+    }
+
+    // Generate bookmarklet
+    function generateBookmarklet() {
+        const serverUrl = window.location.origin;
+        const bookmarkletCode = `
+javascript:(function(){
+    var title = document.title;
+    var url = window.location.href;
+    var content = document.body.innerText;
+
+    // Create a simple form to send to PMPC
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '${serverUrl}/api/documents/add-to-rag';
+    form.style.display = 'none';
+
+    var fields = {
+        'type': 'text',
+        'title': title,
+        'content': content,
+        'session_id': 'bookmarklet',
+        'source_url': url
+    };
+
+    for (var key in fields) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = fields[key];
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+
+    // Show notification
+    var notification = document.createElement('div');
+    notification.innerHTML = 'Adding to PMPC RAG...';
+    notification.style.cssText = 'position:fixed;top:10px;right:10px;background:#28a745;color:white;padding:10px;border-radius:5px;z-index:10000;font-family:Arial;';
+    document.body.appendChild(notification);
+
+    // Submit via fetch instead of form
+    fetch('${serverUrl}/api/documents/add-to-rag', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(fields)
+    }).then(response => response.json())
+    .then(data => {
+        notification.innerHTML = data.success ? 'Added to PMPC RAG!' : 'Error: ' + data.error;
+        notification.style.background = data.success ? '#28a745' : '#dc3545';
+        setTimeout(() => notification.remove(), 3000);
+    }).catch(err => {
+        notification.innerHTML = 'Error adding to RAG';
+        notification.style.background = '#dc3545';
+        setTimeout(() => notification.remove(), 3000);
+    });
+
+    form.remove();
+})();`.replace(/\s+/g, ' ').trim();
+
+        document.getElementById('bookmarklet-code').value = bookmarkletCode;
+        document.getElementById('bookmarklet-link').href = bookmarkletCode;
+
+        new bootstrap.Modal(document.getElementById('bookmarkletModal')).show();
+    }
+
+    // Copy bookmarklet code
+    function copyBookmarklet() {
+        const codeTextarea = document.getElementById('bookmarklet-code');
+        codeTextarea.select();
+        document.execCommand('copy');
+        showAlert('success', 'Bookmarklet code copied to clipboard');
+    }
+
+    // Download browser extension template
+    function downloadExtension() {
+        showAlert('info', 'Browser extension template download would start here');
+        // In a real implementation, this would download a zip file with extension template
+    }
+
+    // Refresh documents
+    function refreshDocuments() {
+        loadDocuments();
+    }
+
+    // Load and display background jobs
+    async function loadJobs() {
+        try {
+            const response = await fetch('/api/documents/jobs');
+            const result = await response.json();
+
+            if (result.success && result.jobs.length > 0) {
+                displayJobs(result.jobs);
+                document.getElementById('jobs-card').style.display = 'block';
+            } else {
+                document.getElementById('jobs-card').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error loading jobs:', error);
+        }
+    }
+
+    // Display jobs in table
+    function displayJobs(jobs) {
+        const tbody = document.getElementById('jobs-table');
+        tbody.innerHTML = '';
+
+        jobs.forEach(job => {
+            const row = document.createElement('tr');
+
+            // Status badge
+            let statusBadge = '';
+            switch (job.status) {
+                case 'completed':
+                    statusBadge = '<span class="badge bg-success">Completed</span>';
+                    break;
+                case 'failed':
+                    statusBadge = '<span class="badge bg-danger">Failed</span>';
+                    break;
+                case 'processing':
+                case 'indexing':
+                case 'downloading':
+                case 'cloning':
+                case 'scanning':
+                    statusBadge = '<span class="badge bg-primary">Processing</span>';
+                    break;
+                default:
+                    statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+            }
+
+            // Progress bar
+            const progressBar = job.status === 'completed' ?
+                '<div class="progress"><div class="progress-bar bg-success" style="width: 100%">100%</div></div>' :
+                job.status === 'failed' ?
+                '<div class="progress"><div class="progress-bar bg-danger" style="width: 100%">Failed</div></div>' :
+                `<div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${job.progress}%">${job.progress}%</div></div>`;
+
+            // Format date
+            const createdDate = new Date(job.created_at).toLocaleString();
+
+            row.innerHTML = `
+                <td><span class="badge bg-info">${job.content_type}</span></td>
+                <td>${statusBadge}</td>
+                <td style="width: 150px;">${progressBar}</td>
+                <td><small>${job.message}</small></td>
+                <td><small>${createdDate}</small></td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    }
+
+    // Toggle jobs card visibility
+    function toggleJobsCard() {
+        const cardBody = document.getElementById('jobs-card-body');
+        const icon = document.getElementById('jobs-toggle-icon');
+
+        if (cardBody.style.display === 'none') {
+            cardBody.style.display = 'block';
+            icon.className = 'bi bi-chevron-up';
+        } else {
+            cardBody.style.display = 'none';
+            icon.className = 'bi bi-chevron-down';
+        }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDocuments();
+        loadJobs();
+
+        // Refresh jobs every 5 seconds
+        setInterval(loadJobs, 5000);
+    });
+</script>
+{% endblock %}

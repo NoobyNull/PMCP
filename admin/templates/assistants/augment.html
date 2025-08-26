@@ -1,0 +1,789 @@
+{% extends "base.html" %}
+
+{% block title %}VSCode Augment Assistant - PerfectMCP Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode fixes for Augment page */
+    [data-theme="dark"] .form-control {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .form-control:focus {
+        background-color: var(--bg-secondary);
+        border-color: #80bdff;
+        color: var(--text-primary);
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    [data-theme="dark"] .form-control[readonly] {
+        background-color: var(--bg-primary);
+        opacity: 0.8;
+    }
+
+    [data-theme="dark"] .input-group-text {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .form-select {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .form-select:focus {
+        background-color: var(--bg-secondary);
+        border-color: #80bdff;
+        color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .text-gray-800 {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .text-muted {
+        color: var(--text-secondary) !important;
+    }
+
+    /* JSON Configuration Box Dark Mode */
+    [data-theme="dark"] .config-copy-container pre {
+        background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%) !important;
+        border: 1px solid var(--border-color);
+        color: #d4d4d4 !important;
+    }
+
+    [data-theme="dark"] .config-copy-container code {
+        color: #d4d4d4 !important;
+    }
+
+    /* Button improvements for dark mode */
+    [data-theme="dark"] .btn-outline-secondary {
+        color: var(--text-secondary);
+        border-color: var(--border-color);
+    }
+
+    [data-theme="dark"] .btn-outline-secondary:hover {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    /* Alert improvements */
+    [data-theme="dark"] .alert {
+        border-color: var(--border-color);
+    }
+
+    [data-theme="dark"] .alert-success {
+        background-color: rgba(40, 167, 69, 0.1);
+        border-color: rgba(40, 167, 69, 0.3);
+        color: #d1e7dd;
+    }
+
+    [data-theme="dark"] .alert-danger {
+        background-color: rgba(220, 53, 69, 0.1);
+        border-color: rgba(220, 53, 69, 0.3);
+        color: #f8d7da;
+    }
+
+    [data-theme="dark"] .alert-info {
+        background-color: rgba(13, 202, 240, 0.1);
+        border-color: rgba(13, 202, 240, 0.3);
+        color: #b6effb;
+    }
+
+    /* List Group Dark Mode */
+    [data-theme="dark"] .list-group-item {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .list-group-item:hover {
+        background-color: var(--card-bg);
+    }
+
+    [data-theme="dark"] .list-group-numbered .list-group-item::before {
+        color: var(--text-primary);
+    }
+
+    /* Badge Dark Mode */
+    [data-theme="dark"] .badge {
+        color: #fff !important;
+    }
+
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: #0d6efd !important;
+    }
+
+    /* Card Background Fixes - Force Override Bootstrap */
+    [data-theme="dark"] .card.bg-light {
+        background-color: var(--bg-secondary) !important;
+        background: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    [data-theme="dark"] .bg-light {
+        background-color: var(--bg-secondary) !important;
+        background: var(--bg-secondary) !important;
+    }
+
+    [data-theme="dark"] .card.bg-light .card-body {
+        color: var(--text-primary) !important;
+        background-color: transparent !important;
+    }
+
+    [data-theme="dark"] .card.bg-light .card-title {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .card.bg-light .card-text {
+        color: var(--text-secondary) !important;
+    }
+
+    [data-theme="dark"] .card.bg-light h6 {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .card.bg-light p {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Font Weight and Text Styling */
+    [data-theme="dark"] .fw-bold {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] h5 {
+        color: var(--text-primary) !important;
+    }
+
+    /* Card Header Text Color */
+    [data-theme="dark"] .card-header h6 {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .text-info {
+        color: #17a2b8 !important;
+    }
+
+    /* Additional Bootstrap Override for Light Backgrounds */
+    [data-theme="dark"] .bg-light,
+    [data-theme="dark"] .bg-light.card,
+    [data-theme="dark"] div.bg-light {
+        background-color: var(--bg-secondary) !important;
+        background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Ensure all child elements inherit proper colors */
+    [data-theme="dark"] .bg-light * {
+        color: inherit !important;
+    }
+
+    [data-theme="dark"] .bg-light .card-title,
+    [data-theme="dark"] .bg-light h1,
+    [data-theme="dark"] .bg-light h2,
+    [data-theme="dark"] .bg-light h3,
+    [data-theme="dark"] .bg-light h4,
+    [data-theme="dark"] .bg-light h5,
+    [data-theme="dark"] .bg-light h6 {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .bg-light .card-text,
+    [data-theme="dark"] .bg-light p,
+    [data-theme="dark"] .bg-light small {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Custom Quick Setup Card Styling */
+    .quick-setup-card {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    [data-theme="dark"] .quick-setup-card {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    [data-theme="dark"] .quick-setup-card .card-body {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .quick-setup-card .card-title {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .quick-setup-card .card-text {
+        color: var(--text-secondary) !important;
+    }
+
+    [data-theme="dark"] .quick-setup-card h6 {
+        color: var(--text-primary) !important;
+    }
+
+    [data-theme="dark"] .quick-setup-card p {
+        color: var(--text-secondary) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="alert-container"></div>
+
+<!-- Page Header -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="bi bi-robot"></i> VSCode Augment Assistant Configuration
+    </h1>
+    <div>
+        <button class="btn btn-primary" onclick="generateApiKey()">
+            <i class="bi bi-key"></i> Generate New API Key
+        </button>
+        <button class="btn btn-success" onclick="testConnection()">
+            <i class="bi bi-check-circle"></i> Test Connection
+        </button>
+        <button class="btn btn-info" onclick="testCopy()">
+            <i class="bi bi-clipboard-check"></i> Test Copy
+        </button>
+    </div>
+</div>
+
+<!-- Configuration Cards -->
+<div class="row">
+    <!-- Server Configuration -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-server"></i> Server Configuration
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Server URL:</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="server-url" 
+                               value="{{ server_info.tools_endpoint }}" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('server-url')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">Use this URL to connect Augment to PerfectMPC</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label"><strong>Server IP:</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="server-ip" value="{{ server_info.host }}" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('server-ip')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>Admin Port:</strong></label>
+                        <input type="text" class="form-control" value="{{ server_info.admin_port }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>MPC Port:</strong></label>
+                        <input type="text" class="form-control" value="{{ server_info.mpc_port }}" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Authentication Configuration -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">
+                    <i class="bi bi-shield-lock"></i> Authentication
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>API Key:</strong></label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="api-key" 
+                               placeholder="Click 'Generate New API Key' to create one">
+                        <button class="btn btn-outline-secondary" onclick="toggleApiKeyVisibility()">
+                            <i class="bi bi-eye" id="api-key-toggle-icon"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('api-key')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">This key provides access to PerfectMPC services</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label"><strong>Authentication Header:</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="auth-header" 
+                               placeholder="Authorization: Bearer [your-api-key]" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('auth-header')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> Keep your API key secure. It provides access to your PerfectMPC server.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- VSCode Configuration -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">
+                    <i class="bi bi-code-square"></i> VSCode Augment Extension Setup
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h5>Step-by-Step Configuration:</h5>
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">Install Augment Extension</div>
+                                    Open VSCode and install the Augment extension from the marketplace
+                                </div>
+                                <span class="badge bg-primary rounded-pill">1</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">Generate API Key</div>
+                                    Click "Generate New API Key" button above to create authentication credentials
+                                </div>
+                                <span class="badge bg-primary rounded-pill">2</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">Configure Server Connection</div>
+                                    In VSCode, open Augment settings and add the server URL and API key
+                                </div>
+                                <span class="badge bg-primary rounded-pill">3</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">Test Connection</div>
+                                    Use the "Test Connection" button to verify everything is working
+                                </div>
+                                <span class="badge bg-primary rounded-pill">4</span>
+                            </li>
+                        </ol>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card quick-setup-card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-lightbulb"></i> Quick Setup
+                                </h6>
+                                <p class="card-text small">
+                                    Copy the configuration below and paste it into your VSCode Augment settings:
+                                </p>
+                                <button class="btn btn-sm btn-outline-primary" onclick="copyAugmentConfig()">
+                                    <i class="bi bi-clipboard"></i> Copy Config
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration JSON -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-warning">
+                    <i class="bi bi-file-code"></i> MCP Server Configuration
+                </h6>
+                <button class="btn btn-sm btn-outline-warning" onclick="copyToClipboard('config-json')">
+                    <i class="bi bi-clipboard"></i> Copy Configuration
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Configuration Format:</strong></label>
+                    <select class="form-select" id="config-format" onchange="updateConfigFormat()">
+                        <option value="mcp">MCP Server Configuration (Recommended)</option>
+                        <option value="vscode">VSCode Settings (Legacy)</option>
+                    </select>
+                </div>
+
+                <div class="config-copy-container">
+                    <pre id="config-json" class="bg-dark text-light p-3 rounded"><code id="config-content">{
+  "servers": [
+    {
+      "name": "PerfectMCP Server",
+      "type": "http",
+      "url": "http://{{ server_info.host }}:{{ server_info.mcp_port }}",
+      "headers": {
+        "Authorization": "Bearer [YOUR_API_KEY_HERE]",
+        "Content-Type": "application/json"
+      },
+      "description": "PerfectMCP server with comprehensive tool suite"
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>MCP Configuration:</strong> This is the recommended format for Augment. Import this as an MCP server configuration.
+                </div>
+
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Important:</strong> Replace <code>[YOUR_API_KEY_HERE]</code> with your actual API key before using this configuration.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Status -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-secondary">
+                    <i class="bi bi-activity"></i> Connection Status
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="connection-status" class="alert alert-secondary">
+                    <i class="bi bi-clock"></i> Click "Test Connection" to check server connectivity
+                </div>
+                <div id="connection-details" style="display: none;">
+                    <h6>Available Services:</h6>
+                    <ul id="services-list" class="list-unstyled">
+                        <!-- Services will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentApiKey = '';
+
+// Generate new API key
+async function generateApiKey() {
+    try {
+        const response = await fetch('/api/auth/generate-key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: 'augment_user',
+                name: 'VSCode Augment Extension',
+                permissions: ['sessions:*', 'documents:*', 'code:analyze', 'database:read']
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentApiKey = result.api_key;
+            document.getElementById('api-key').value = currentApiKey;
+            updateAuthHeader();
+            updateConfigJson();
+            
+            showAlert('success', 'API Key Generated Successfully!', 
+                     `Your new API key has been generated. Make sure to copy it now - it won't be shown again.`);
+        } else {
+            showAlert('danger', 'Error', result.error || 'Failed to generate API key');
+        }
+    } catch (error) {
+        showAlert('danger', 'Error', 'Failed to generate API key: ' + error.message);
+    }
+}
+
+// Test connection to server
+async function testConnection() {
+    const apiKey = document.getElementById('api-key').value;
+    
+    if (!apiKey) {
+        showAlert('warning', 'No API Key', 'Please generate an API key first');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/tools', {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        });
+        
+        if (response.ok) {
+            const tools = await response.json();
+            
+            document.getElementById('connection-status').innerHTML = 
+                '<i class="bi bi-check-circle text-success"></i> Connection successful!';
+            document.getElementById('connection-status').className = 'alert alert-success';
+            
+            // Show available services
+            const servicesList = document.getElementById('services-list');
+            servicesList.innerHTML = '';
+            
+            if (tools.apis) {
+                Object.entries(tools.apis).forEach(([name, api]) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<i class="bi bi-check text-success"></i> ${api.description || name}`;
+                    servicesList.appendChild(li);
+                });
+            }
+            
+            document.getElementById('connection-details').style.display = 'block';
+            
+            showAlert('success', 'Connection Test Successful', 
+                     'Augment can successfully connect to PerfectMPC server');
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+    } catch (error) {
+        document.getElementById('connection-status').innerHTML = 
+            '<i class="bi bi-x-circle text-danger"></i> Connection failed: ' + error.message;
+        document.getElementById('connection-status').className = 'alert alert-danger';
+        document.getElementById('connection-details').style.display = 'none';
+        
+        showAlert('danger', 'Connection Test Failed', error.message);
+    }
+}
+
+// Toggle API key visibility
+function toggleApiKeyVisibility() {
+    const apiKeyInput = document.getElementById('api-key');
+    const toggleIcon = document.getElementById('api-key-toggle-icon');
+    
+    if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+        toggleIcon.className = 'bi bi-eye-slash';
+    } else {
+        apiKeyInput.type = 'password';
+        toggleIcon.className = 'bi bi-eye';
+    }
+}
+
+// Update authentication header
+function updateAuthHeader() {
+    const apiKey = document.getElementById('api-key').value;
+    const authHeader = document.getElementById('auth-header');
+    
+    if (apiKey) {
+        authHeader.value = `Authorization: Bearer ${apiKey}`;
+    } else {
+        authHeader.value = 'Authorization: Bearer [your-api-key]';
+    }
+}
+
+// Update configuration JSON
+function updateConfigJson() {
+    const apiKey = document.getElementById('api-key').value;
+    const configContent = document.getElementById('config-content');
+    const format = document.getElementById('config-format').value;
+
+    let config;
+
+    if (format === 'mcp') {
+        // MCP Server Configuration format
+        config = {
+            "servers": [
+                {
+                    "name": "PerfectMCP Server",
+                    "type": "http",
+                    "url": "http://{{ server_info.host }}:{{ server_info.mcp_port }}",
+                    "headers": {
+                        "Authorization": `Bearer ${apiKey || "[YOUR_API_KEY_HERE]"}`,
+                        "Content-Type": "application/json"
+                    },
+                    "description": "PerfectMCP server with comprehensive tool suite"
+                }
+            ]
+        };
+    } else {
+        // VSCode Settings format (legacy)
+        config = {
+            "augment.server.url": "{{ server_info.tools_endpoint }}",
+            "augment.server.apiKey": apiKey || "[YOUR_API_KEY_HERE]",
+            "augment.server.timeout": 30000,
+            "augment.features.codeAnalysis": true,
+            "augment.features.documentSearch": true,
+            "augment.features.sessionManagement": true,
+            "augment.features.databaseAccess": true
+        };
+    }
+
+    configContent.textContent = JSON.stringify(config, null, 2);
+}
+
+// Update configuration format
+function updateConfigFormat() {
+    updateConfigJson();
+
+    const format = document.getElementById('config-format').value;
+    const infoAlert = document.querySelector('.alert-info');
+
+    if (format === 'mcp') {
+        infoAlert.innerHTML = `
+            <i class="bi bi-info-circle"></i>
+            <strong>MCP Configuration:</strong> This is the recommended format for Augment. Import this as an MCP server configuration.
+        `;
+    } else {
+        infoAlert.innerHTML = `
+            <i class="bi bi-info-circle"></i>
+            <strong>VSCode Settings:</strong> Legacy format for VSCode settings. Use MCP format for better compatibility.
+        `;
+    }
+}
+
+// Copy Augment configuration
+function copyAugmentConfig() {
+    copyToClipboard('config-json');
+    showAlert('info', 'Configuration Copied', 'Paste this into your VSCode Augment settings');
+}
+
+// Test copy functionality
+function testCopy() {
+    const testText = 'Test copy functionality - ' + new Date().toISOString();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(testText).then(() => {
+            showAlert('success', 'Copy Test Successful!', 'The copy functionality is working correctly');
+        }).catch(err => {
+            console.error('Copy test failed:', err);
+            showAlert('danger', 'Copy Test Failed', 'Error: ' + err.message);
+        });
+    } else {
+        showAlert('warning', 'Clipboard API Not Available', 'Your browser may not support the clipboard API');
+    }
+}
+
+// Copy to clipboard utility
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error('Element not found:', elementId);
+        showAlert('warning', 'Copy Failed', 'Element not found');
+        return;
+    }
+
+    let text = '';
+
+    // Handle different element types
+    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+        text = element.value;
+    } else if (element.tagName === 'PRE' || element.tagName === 'CODE') {
+        text = element.textContent || element.innerText;
+    } else {
+        text = element.textContent || element.innerText || element.value;
+    }
+
+    if (!text) {
+        showAlert('warning', 'Copy Failed', 'No content to copy');
+        return;
+    }
+
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showAlert('success', 'Copied!', 'Content copied to clipboard');
+        }).catch(err => {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyToClipboard(text);
+    }
+}
+
+// Fallback copy method for older browsers
+function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showAlert('success', 'Copied!', 'Content copied to clipboard');
+        } else {
+            showAlert('warning', 'Copy Failed', 'Please copy manually');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showAlert('warning', 'Copy Failed', 'Please copy manually');
+    } finally {
+        document.body.removeChild(textArea);
+    }
+}
+
+// Show alert utility
+function showAlert(type, title, message) {
+    const alertContainer = document.getElementById('alert-container');
+    const alertId = 'alert-' + Date.now();
+    
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <strong>${title}:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    alertContainer.innerHTML = alertHtml;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById(alertId);
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Update auth header when API key changes
+    document.getElementById('api-key').addEventListener('input', function() {
+        updateAuthHeader();
+        updateConfigJson();
+    });
+    
+    // Initialize configuration
+    updateAuthHeader();
+    updateConfigJson();
+});
+</script>
+{% endblock %}

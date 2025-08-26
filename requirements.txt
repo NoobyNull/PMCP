@@ -1,0 +1,61 @@
+# Core Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==12.0
+
+# Database Drivers
+redis==5.0.1
+pymongo==4.6.0
+motor==3.3.2
+
+# AI/ML Libraries
+openai==1.3.7
+anthropic==0.7.8
+sentence-transformers==2.2.2
+chromadb==0.4.18
+langchain==0.0.350
+langchain-community==0.0.2
+
+# Data Processing
+numpy==1.24.3
+pandas==2.1.4
+pydantic==2.5.0
+
+# SSH/SFTP Support
+paramiko==3.4.0
+asyncssh==2.14.2
+
+# Code Analysis
+ast-decompiler==0.7.0
+astpretty==3.0.0
+pylint==3.0.3
+black==23.11.0
+isort==5.12.0
+
+# Documentation & RAG
+beautifulsoup4==4.12.2
+markdown==3.5.1
+python-docx==1.1.0
+pypdf==3.17.4
+
+# Configuration & Logging
+pyyaml==6.0.1
+python-dotenv==1.0.0
+structlog==23.2.0
+
+# HTTP Client
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Security
+cryptography==41.0.8
+bcrypt==4.1.2
+
+# Utilities
+click==8.1.7
+rich==13.7.0
+tqdm==4.66.1

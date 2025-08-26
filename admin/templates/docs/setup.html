@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Setup Guide - PerfectMCP{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-gear-fill"></i> Setup Guide</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list"></i> Setup Steps</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><a href="#requirements" class="text-decoration-none">Requirements</a></li>
+                    <li><a href="#installation" class="text-decoration-none">Installation</a></li>
+                    <li><a href="#configuration" class="text-decoration-none">Configuration</a></li>
+                    <li><a href="#services" class="text-decoration-none">Services Setup</a></li>
+                    <li><a href="#verification" class="text-decoration-none">Verification</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <section id="requirements">
+                    <h3><i class="bi bi-list-check"></i> Requirements</h3>
+                    <p>Before installing PerfectMCP, ensure your system meets these requirements:</p>
+                    
+                    <h5>System Requirements</h5>
+                    <ul>
+                        <li>Linux (Ubuntu 20.04+ recommended)</li>
+                        <li>Python 3.8 or higher</li>
+                        <li>4GB RAM minimum (8GB recommended)</li>
+                        <li>10GB free disk space</li>
+                    </ul>
+
+                    <h5>Dependencies</h5>
+                    <ul>
+                        <li>Redis Server</li>
+                        <li>MongoDB</li>
+                        <li>Git</li>
+                    </ul>
+                </section>
+
+                <section id="installation" class="mt-4">
+                    <h3><i class="bi bi-download"></i> Installation</h3>
+                    
+                    <h5>1. Clone Repository</h5>
+                    <pre><code>git clone https://github.com/perfectmcp/perfectmcp.git
+cd perfectmcp</code></pre>
+
+                    <h5>2. Create Virtual Environment</h5>
+                    <pre><code>python3 -m venv venv
+source venv/bin/activate</code></pre>
+
+                    <h5>3. Install Dependencies</h5>
+                    <pre><code>pip install -r requirements.txt</code></pre>
+
+                    <h5>4. Install System Services</h5>
+                    <pre><code>sudo apt update
+sudo apt install redis-server mongodb</code></pre>
+                </section>
+
+                <section id="configuration" class="mt-4">
+                    <h3><i class="bi bi-gear"></i> Configuration</h3>
+                    
+                    <h5>Database Configuration</h5>
+                    <p>Edit <code>config/database.yaml</code> to configure your database connections:</p>
+                    <pre><code>redis:
+  host: "0.0.0.0"
+  port: 6379
+  
+mongodb:
+  host: "0.0.0.0"
+  port: 27017
+  database: "perfectmcp"</code></pre>
+
+                    <h5>Server Configuration</h5>
+                    <p>Edit <code>config/server.yaml</code> for server settings:</p>
+                    <pre><code>server:
+  host: "192.168.0.78"
+  port: 8000
+  debug: false</code></pre>
+                </section>
+
+                <section id="services" class="mt-4">
+                    <h3><i class="bi bi-server"></i> Services Setup</h3>
+                    
+                    <h5>Start Redis</h5>
+                    <pre><code>sudo systemctl start redis-server
+sudo systemctl enable redis-server</code></pre>
+
+                    <h5>Start MongoDB</h5>
+                    <pre><code>sudo systemctl start mongod
+sudo systemctl enable mongod</code></pre>
+
+                    <h5>Start PerfectMCP</h5>
+                    <pre><code>python3 src/main.py</code></pre>
+
+                    <h5>Start Admin Interface</h5>
+                    <pre><code>python3 admin_server.py</code></pre>
+                </section>
+
+                <section id="verification" class="mt-4">
+                    <h3><i class="bi bi-check-circle"></i> Verification</h3>
+                    
+                    <h5>Check Services</h5>
+                    <p>Verify all services are running:</p>
+                    <pre><code>curl http://192.168.0.78:8000/health
+curl http://192.168.0.78:8080/</code></pre>
+
+                    <div class="alert alert-success">
+                        <strong>Success!</strong> If both URLs respond, your PerfectMCP installation is complete.
+                    </div>
+
+                    <h5>Next Steps</h5>
+                    <ul>
+                        <li>Configure AI API keys in the admin interface</li>
+                        <li>Set up MCP integration with your development tools</li>
+                        <li>Upload documents for RAG functionality</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
