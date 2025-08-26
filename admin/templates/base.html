@@ -851,6 +851,12 @@
 
         .modal-backdrop {
             z-index: 1050 !important;
+            background-color: rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Lighter backdrop for dark mode */
+        [data-theme="dark"] .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.4) !important;
         }
 
         .modal.show {
@@ -868,10 +874,15 @@
             pointer-events: auto !important;
         }
 
-        /* Fix for overlay issues */
+        /* Fix for overlay issues - reduce backdrop opacity */
         .modal-backdrop.show {
-            opacity: 0.5;
+            opacity: 0.3;
             pointer-events: none !important;
+        }
+
+        /* Even lighter backdrop for dark mode */
+        [data-theme="dark"] .modal-backdrop.show {
+            opacity: 0.4;
         }
 
         /* Prevent body scroll when modal is open */
@@ -902,6 +913,24 @@
         /* Popovers in modals */
         .modal .popover {
             z-index: 1065 !important;
+        }
+
+        /* Prevent backdrop stacking issues */
+        .modal-backdrop + .modal-backdrop {
+            display: none !important;
+        }
+
+        /* Ensure backdrop doesn't interfere with content visibility */
+        .modal-backdrop.fade {
+            opacity: 0;
+        }
+
+        .modal-backdrop.fade.show {
+            opacity: 0.3;
+        }
+
+        [data-theme="dark"] .modal-backdrop.fade.show {
+            opacity: 0.4;
         }
     </style>
     
