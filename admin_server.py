@@ -2619,45 +2619,77 @@ async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
 
     try:
+        # Try to get Redis handler first
         redis_handler = get_async_redis_handler()
-        if not redis_handler:
-            await websocket.send_json({
-                "error": "Redis logging not available",
-                "fallback": "file"
-            })
-            await websocket.close()
-            return
 
-        # Send initial logs
-        initial_logs = await redis_handler.get_logs_async(count=50)
-        await websocket.send_json({
-            "type": "initial_logs",
-            "logs": initial_logs
-        })
-
-        # Stream new logs (simplified polling approach)
-        last_count = len(initial_logs)
-
-        while True:
+        if redis_handler:
+            # Use Redis for logs
             try:
-                # Check for new logs every 2 seconds
-                await asyncio.sleep(2)
+                # Send initial logs
+                initial_logs = await redis_handler.get_logs_async(count=50)
+                await websocket.send_json({
+                    "type": "initial_logs",
+                    "logs": initial_logs
+                })
 
-                current_logs = await redis_handler.get_logs_async(count=100)
-                current_count = len(current_logs)
+                # Stream new logs (simplified polling approach)
+                last_count = len(initial_logs)
 
-                if current_count > last_count:
-                    # Send only new logs
-                    new_logs = current_logs[:current_count - last_count]
-                    await websocket.send_json({
-                        "type": "new_logs",
-                        "logs": new_logs
-                    })
-                    last_count = current_count
+                while True:
+                    try:
+                        # Check for new logs every 2 seconds
+                        await asyncio.sleep(2)
+
+                        current_logs = await redis_handler.get_logs_async(count=100)
+                        current_count = len(current_logs)
+
+                        if current_count > last_count:
+                            # Send only new logs
+                            new_logs = current_logs[:current_count - last_count]
+                            await websocket.send_json({
+                                "type": "new_logs",
+                                "logs": new_logs
+                            })
+                            last_count = current_count
+
+                    except Exception as e:
+                        logger.error(f"WebSocket log streaming error: {e}")
+                        break
 
             except Exception as e:
-                logger.error(f"WebSocket log streaming error: {e}")
-                break
+                logger.error(f"Redis WebSocket error: {e}")
+                # Fall through to file-based fallback
+                redis_handler = None
+
+        if not redis_handler:
+            # Fallback to file-based logs with polling
+            await websocket.send_json({
+                "type": "initial_logs",
+                "logs": await get_file_logs_for_websocket(50)
+            })
+
+            # Simple polling for file-based logs
+            last_size = 0
+            while True:
+                try:
+                    await asyncio.sleep(3)  # Slower polling for files
+
+                    # Check if log file has grown
+                    log_file = Path("/opt/PerfectMCP/logs/server.log")
+                    if log_file.exists():
+                        current_size = log_file.stat().st_size
+                        if current_size > last_size:
+                            # Send new logs
+                            new_logs = await get_file_logs_for_websocket(10)
+                            await websocket.send_json({
+                                "type": "new_logs",
+                                "logs": new_logs
+                            })
+                            last_size = current_size
+
+                except Exception as e:
+                    logger.error(f"File WebSocket error: {e}")
+                    break
 
     except Exception as e:
         logger.error(f"WebSocket connection error: {e}")
@@ -2666,6 +2698,41 @@ async def websocket_logs(websocket: WebSocket):
             await websocket.close()
         except:
             pass
+
+async def get_file_logs_for_websocket(count: int = 50):
+    """Get logs from file for WebSocket streaming"""
+    try:
+        log_file = Path("/opt/PerfectMCP/logs/server.log")
+        if not log_file.exists():
+            return []
+
+        with open(log_file, 'r') as f:
+            lines = f.readlines()
+
+        # Get last N lines
+        recent_lines = lines[-count:] if len(lines) > count else lines
+
+        logs = []
+        for line in recent_lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Simple log parsing
+            log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "level": "INFO",
+                "component": "file",
+                "message": line,
+                "raw": line
+            }
+            logs.append(log_entry)
+
+        return logs
+
+    except Exception as e:
+        logger.error(f"Error reading file logs: {e}")
+        return []
 
 @app.post("/api/auth/users/bulk")
 async def bulk_user_operations(operation_data: dict):
